@@ -161,7 +161,6 @@ DBMSはこの制御を行うために、内部で**ロック**(lock)と呼ばれ
     SET CURRENT ISOLATION 分離レベル名
     # どちらの構文を使うかは、DBMS製品によって異なる。
     ```
-    
 
 たとえば、最も安全だけれどデータベースの処理速度は落ちてしまうSERIALIZABLEという分離レベルを使う場合、リスト9-2のように指定します。
 
@@ -171,4 +170,12 @@ DBMSはこの制御を行うために、内部で**ロック**(lock)と呼ばれ
 SET TRANSACTION ISOLATION LEVEL SERIALIZABLE
 ```
 
-- **READ UNCOMMITTEDが無効である理由**
+### READ UNCOMMITTEDが無効である理由
+Oracle DBやPostgreSQLには、分離レベルとしてREAD UNCMMITTEDが存在しません。データベースの内部機構上、常に、コミットされていない情報は読めないようになっているからです。
+
+これらのDBMSでは、あるトランザクションによってデータが書き換えられている最中も書き換え前の情報が残っており、ほかのトランザクションから利用可能になっています。つまり、わざわざロックをかけずともダーティーリードが起こらないのです。
+
+あるデータについて、「書き換え済み(但し未確定)」と「書き換え前」の2つのバージョンを併存させることを**並列実行制御**(MVCC:multi-version concurrency control)といいます。</details>
+
+
+<details><summary>9.4 ロックの活用</summary>
