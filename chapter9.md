@@ -356,6 +356,3 @@ COMMIT;
 ```
 
 </details>
-
-
-<details><summary>
