@@ -831,4 +831,151 @@ SET 型では複数の値を指定できるということですが、重複し�
 
 ’Business,Business’ のような形の場合、値が足されているわけではなく、'2^2, 2^2' と二つの 4 が入っていると考えてください。
 ### 質問：VALUESは何を意味しているのですか？
-                                                      
+回答：INSERTでデータを挿入するときに値を指定するためのものです。
+
+`VALUES` は `INSERT` でデータを挿入するときに値を指定するためのものです。
+
+`INSERT` 文全体はこうなっていますね。
+
+```sql
+INSERT INTO posts (message, likes, categories) VALUES
+  ('Tnanks', 12, 3),
+  ('Arigato', 4, 4),
+  ('Merci', 4, 5);
+
+```
+
+`VALUES` で指定されているのは後に続く
+
+```
+  ('Tnanks', 12, 3),
+  ('Arigato', 4, 4),
+  ('Merci', 4, 5)
+
+```
+
+の部分です。
+
+つまり `message`, `likes`, `categories` にそれぞれ`'Tnanks'`, `12`, `3` や`'Arigato'`, `4`, `4` といった値が挿入されることになります。
+
+レッスンで言うとこちらです。[#05 レコードを挿入しよう | MySQL入門 基礎編](https://dotinstall.com/lessons/basic_mysql_beginner/55405)
+### 質問：2の0乗は0ではないのですか？
+回答：2の0乗は1になります。
+
+これは説明がなかなか難しい問題ですが、2の0乗は1になります。以下も参考にしていただければと思います。
+
+[https://www.google.com/search?q=2%E3%81%AE0%E4%B9%97&oq=2%E3%81%AE0%E4%B9%97&aqs=chrome..69i57j0l3.8775j0j7&sourceid=chrome&ie=UTF-8](https://www.google.com/search?q=2%E3%81%AE0%E4%B9%97&oq=2%E3%81%AE0%E4%B9%97&aqs=chrome..69i57j0l3.8775j0j7&sourceid=chrome&ie=UTF-8)
+</details>
+
+
+<details><summary>#11 真偽値、日時を扱ってみよう</summary>
+
+まず真偽値ですが、下書きかどうかを is_draft で管理してみましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT,
+  is_draft BOOL, # BOOLは真偽値を表す
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4);
+
+SELECT * FROM posts;
+```
+
+次にこのレコードが作成された日時をcreatedで管理してみます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT,
+  is_draft BOOL,
+  created DATETIME # DATETIMEは日時を表す
+);
+
+INSERT INTO posts (message, likes, if_draft, created) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4);
+
+SELECT * FROM posts;
+```
+
+is_draft と created のデータを挿入していきましょう。
+
+- 真偽値ですが、 TRUE か FALSE もしくは TRUE は 1 FALSE は 0 なので、このように書いてあげても OK です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT,
+  is_draft BOOL,
+  created DATETIME
+);
+
+INSERT INTO posts (message, likes, is_draft, created) VALUES
+  ('Thanks', 12, TRUE),
+  ('Arigato', 4, FALSE),
+  ('Merci', 4, 0);
+
+SELECT * FROM posts;
+```
+
+- 日時ですが、ハイフンやコロンで区切った一般的な書式が使えて、このように書いてあげれば OK です。
+- 時間を省略すると 0 時 0 分 0 秒になります。
+- 現在の日時を表す NOW() というキーワードも使えます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT,
+  is_draft BOOL,
+  created DATETIME
+);
+
+INSERT INTO posts (message, likes, is_draft, created) VALUES
+  ('Thanks', 12, TRUE, '2020-10-11 15:32:05'),
+  ('Arigato', 4, FALSE, '2020-10-12'),
+  ('Merci', 4, 0, NOW());
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+-------+----------+---------------------+
+| message | likes | is_draft | created             |
++---------+-------+----------+---------------------+
+| Thanks  |    12 |        1 | 2020-10-11 15:32:05 |
+| Arigato |     4 |        0 | 2020-10-12 00:00:00 |
+| Merci   |     4 |        0 | 2022-05-25 11:27:21 |
++---------+-------+----------+---------------------+
+```
+
+こうした真偽値や日時も扱えるようになっておきましょう。
+### 質問：is_draftの意味は？
+回答：下書きかどうかを真偽値で管理しています。
+
+今回のテーブルは、投稿するものを管理するテーブルというイメージで作成されております。（twitterみたいものをイメージしてください）
+
+その投稿する内容を下書きを判定するためのフィールドとして、is_draft を定義しております。
+
+よって、未完成のsqlという意味ではございません。
+
+- is_draftでTRUEとした方は、「Twitterの"下書き保存"に保存されている投稿」、逆にis_draftをFALSEとした場合は、「下書きではなく実際の投稿」というイメージでOK。
+### 要点まとめ
+- 真偽値型や日付型の扱い方について見ていきます。
+    - BOOL(真偽値)
+    - DATETIME(日時)
+    - NOW( )(現在の日時を表すキーワード)</details>
+
+
+<details><summary>#12 NULLの扱いを見ていこう</summary>
+
+
