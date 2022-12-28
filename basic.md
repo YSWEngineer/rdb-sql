@@ -978,4 +978,102 @@ SELECT * FROM posts;
 
 <details><summary>#12 NULLの扱いを見ていこう</summary>
 
+レコードの挿入ですが、実は全てのカラムに値を設定していなくても OK です。たとえば、 message だけ指定して、レコードを挿入してみましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4);
+  
+INSERT INTO posts (message) VALUES ('Gracias');
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+-------+
+| message | likes |
++---------+-------+
+| Thanks  |    12 |
+| Arigato |     4 |
+| Merci   |     4 |
+| Gracias |  NULL |
++---------+-------+
+
+# このようになり、値を設定しなかった場合、何もないという意味の NULL という特殊な値になります
+```
+
+こうですね、うまくいっていて、値を設定しなかった場合、何もないという意味の NULL (ナル)という特殊な値になります。
+
+ただし、値が設定されていなかったら、エラーではじきたいという場合もあります。その場合はカラムに NOT NULL とつけてあげれば OK です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  -- likes INT
+  likes INT NOT NULL
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4);
+  
+INSERT INTO posts (message) VALUES ('Gracias');
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+ERROR 1364 (HY000) at line 13: Field 'likes' doesn't have a default value
+```
+
+ちゃんとエラーになっています。
+
+それから、値が設定されていなかった場合にエラーではじくのではなくて、デフォルト値を設定してあげることもできて、その場合は DEFAULT としたあとに、デフォルトの値を書いてあげれば OK です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  -- likes INT
+  -- likes INT NOT NULL
+  likes INT DEFAULT 0
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4);
+  
+INSERT INTO posts (message) VALUES ('Gracias');
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+-------+
+| message | likes |
++---------+-------+
+| Thanks  |    12 |
+| Arigato |     4 |
+| Merci   |     4 |
+| Gracias |     0 |
++---------+-------+
+```
+
+データを扱っていると、設定する値がない場合もあるので、こうした操作もできるようになっておきましょう。
+### 要点まとめ
+- MySQLにおけるNULLの扱いについて見ていきます。
+    - NULL(「何もない」という意味の特殊な値)
+    - NOT NULL(値が設定されていないものは、エラーで弾きたい場合に使用する)
+    - DEFAULT(値が設定されていない場合に弾かずにデフォルト値で設定することができる)</details>
+
+
+<details><summary>#13 値に制限をつけてみよう</summary>
 
