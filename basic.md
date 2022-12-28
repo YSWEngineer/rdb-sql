@@ -1077,3 +1077,71 @@ SELECT * FROM posts;
 
 <details><summary>#13 値に制限をつけてみよう</summary>
 
+値の範囲に制限をつける方法。たとえば、 likes は 0 以上 100 以下の値だけにしたいという場合は CHECK を使ってこのように書いてあげれば OK です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT CHECK (likes >= 0 AND likes <= 100)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4);
+
+SELECT * FROM posts;
+```
+
+100を超えた数値を入力するとエラーになります。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT CHECK (likes >= 0 AND likes <= 100)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 154); # 100を超える数値を入力
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+ERROR 4025 (23000) at line 7: CONSTRAINT `posts.likes` failed for `myapp`.`posts`
+```
+
+重複した値を弾きたい場合。例えば、messageに重複した値を入れたくない場合、UNIQUEと付けてください。UNIQUEが付いたmessageには重複した値が入れられないので、'Arigato’ともう一回入れてもエラーになります。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140) UNIQUE,
+  likes INT CHECK (likes >= 0 AND likes <= 200)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 154),
+  ('Arigato', 4);
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+ERROR 1062 (23000) at line 7: Duplicate entry 'Arigato' for key 'message'
+# 'Arigato'が重複している、というエラーが表示される
+```
+
+こうした制約をつけることで適切ではないデータをはじくことができるので、使いこなせるようになっておきましょう。
+### 要点まとめ
+- 値の範囲に制限をつけたり重複する値を弾く方法について見ていきます。
+    - CHECK(値の範囲に制限を設ける)
+    - UNIQUE(重複する値を弾く)</details>
+
+
+<details><summary>#14 主キーを設定してみよう</summary>
+
