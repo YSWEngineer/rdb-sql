@@ -711,4 +711,124 @@ SELECT * FROM posts;
 こうしたENUM型の扱いにも慣れておきましょう。</details>
 
 
-<details><summary>
+<details><summary>#10 SET型を扱ってみよう</summary>
+
+ENUM は'Gadget', 'Game', 'Business’からひとつしか選べませんでしたが、もし複数選べるようにしたいなら、こちらを SET 型にしてあげます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT,
+  categories SET('Gadget', 'Game', 'Business') # SET型にして、わかりやすいようにカラム名を複数形にする
+);
+
+INSERT INTO posts (message, likes, category) VALUES
+  ('Thanks', 12, 1),
+  ('Arigato', 4, 2),
+  ('Merci', 4, 3);
+
+SELECT * FROM posts;
+```
+
+そのうえで、データを挿入する際にはカンマ区切りで値を渡してあげます。渡す値は順不同で OK ですが、カンマ以外に空白などを入れてはいけないので注意しましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT,
+  categories SET('Gadget', 'Game', 'Business')
+);
+
+INSERT INTO posts (message, likes, categories) VALUES
+  ('Thanks', 12, 'Gadget,Game'), # 渡す値は順不同でOKだが、カンマ以外に空白などを入れてはいけない
+  ('Arigato', 4, 'Business'),
+  ('Merci', 4, 'Business,Gadget');
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+-------+-----------------+
+| message | likes | categories      |
++---------+-------+-----------------+
+| Thanks  |    12 | Gadget,Game     |
+| Arigato |     4 | Business        |
+| Merci   |     4 | Gadget,Business |
++---------+-------+-----------------+
+```
+
+変な値を入れるとはじかれるのは ENUM 型と一緒で、たとえばということで、こちらで 'Personal' と指定してみましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT,
+  categories SET('Gadget', 'Game', 'Business')
+);
+
+INSERT INTO posts (message, likes, categories) VALUES
+  ('Thanks', 12, 'Gadget,Game'),
+  -- ('Arigato', 4, 'Business'),
+  ('Arigato', 4, 'Personal'),
+  ('Merci', 4, 'Business,Gadget');
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+ERROR 1265 (01000) at line 8: Data truncated for column 'categories' at row 2
+```
+
+SET 型ですが、内部的に値を数値で管理していて、左から 2 の 0 乗である 1 、 2 の 1 乗である 2 、 2 の 2 乗である 4 といった具合に管理されています。したがって、値を指定したい場合はそういった値も使えるのでちょっと試してみましょう。
+
+- Gadget は 1 、 Game は 2 なので、 1 + 2 で 3 で表現できます。
+- Business に関しては 4 で OK ですね。
+- Business が 4 、 Gadget が 1 なので、 4 + 1 で 5 としてあげれば OK です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT,
+  categories SET('Gadget', 'Game', 'Business') -- 2^0, 2^1, 2^2, ...
+);
+
+-- INSERT INTO posts (message, likes, categories) VALUES
+--   ('Thanks', 12, 'Gadget,Game'),
+--   ('Arigato', 4, 'Business'),
+--   -- ('Arigato', 4, 'Personal'),
+--   ('Merci', 4, 'Business,Gadget');
+  
+INSERT INTO posts (message, likes, categories) VALUES
+  ('Thanks', 12, 3),
+  ('Arigato', 4, 4),
+  ('Merci', 4, 5);
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+-------+-----------------+
+| message | likes | categories      |
++---------+-------+-----------------+
+| Thanks  |    12 | Gadget,Game     |
+| Arigato |     4 | Business        |
+| Merci   |     4 | Gadget,Business |
++---------+-------+-----------------+
+```
+
+こうした SET 型も扱えるようになっておきましょう。
+### 質問：SET型では複数の値を指定できるということですが、重複して選択することは可能なのでしょうか？
+SET 型では複数の値を指定できるということですが、重複して選択することは可能なのでしょうか？
+
+今回は( 'Gadget', 'Game', 'Business' ) -- 2^0 , 2^1 , 2^2 , ...ということですが、例えば( 'Gadget', 'Game', 'Business' ,' Fashion' ) -- 2^0, 2^1 , 2^2 , 2^3 ...の場合、categories を値 8 で指定したとき、'Fashion'(2^3)または’Business,Business’（2^2 + 2^2）が考えられるかと思います。
+
+2 つ目のように重複してカテゴリを選択することは可能なのでしょうか？
+
+回答：二つ選択することはできません。
+
+2 つ選択することはできません。
+
+’Business,Business’ のような形の場合、値が足されているわけではなく、'2^2, 2^2' と二つの 4 が入っていると考えてください。
+### 質問：VALUESは何を意味しているのですか？
+                                                      
