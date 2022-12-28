@@ -1269,3 +1269,336 @@ SELECT * FROM posts;
 - レコードを一意に識別するための主キーについて見ていきます。
     - PRIMARY KEY(プライマリーキー(主キー)の設定)
     - AUTO_INCREMENT(値を入力しなければ自動的に連番になる設定。PRIMARY KEYを設定した場合に使用ができる)</details>
+
+
+<details><summary>#15 SELECTでデータを抽出しよう</summary>
+
+SELECTについて見ていきましょう。SELECT * FROM posts とすると、全てのレコードを抽出しなさいという意味になります。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4),
+  ('Gracias', 15),
+  ('Danke', 23);
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  2 | Arigato |     4 |
+|  3 | Merci   |     4 |
+|  4 | Gracias |    15 |
+|  5 | Danke   |    23 |
++----+---------+-------+
+# ↑全てのレコードが抽出されている
+```
+
+また、SELECT * FROM posts の* は全てのカラムという意味で、もし特定のカラムだけ抽出したいならカンマ区切りで、指定してあげれば OK です。では、 id と message だけを posts から抽出してね、と書いてあげましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4),
+  ('Gracias', 15),
+  ('Danke', 23);
+
+-- SELECT * FROM posts;
+SELECT id, message FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+
+| id | message |
++----+---------+
+|  1 | Thanks  |
+|  2 | Arigato |
+|  3 | Merci   |
+|  4 | Gracias |
+|  5 | Danke   |
++----+---------+
+# ↑idとmessageだけが抽出されている
+```
+
+それから条件に合うレコードだけを抽出したい場合は WHERE を使います。では、ここで likes が 10 以上の投稿だけ抽出してみましょう。その場合、このように書いてあげれば OK です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4),
+  ('Gracias', 15),
+  ('Danke', 23);
+
+-- SELECT * FROM posts;
+-- SELECT id, message FROM posts;
+
+SELECT * FROM posts WHERE likes >= 10; # WHEREを使い、likesが10以上の投稿だけを抽出する
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  4 | Gracias |    15 |
+|  5 | Danke   |    23 |
++----+---------+-------+
+```
+
+また、ここで使った記号ですが、他にもあって、何々より大きい、何々以上、何々より小さい、何々以下はこのように表現してあげれば OK です。
+
+```sql
+> >= < <=
+```
+
+それから何々と等しいは、 `=` で表現できて、何々と等しくないは `!=` か、 `<>` で表現することができます。
+
+では、今度は message のほうでこの条件を使ってみましょう。message が 'Danke' のレコードを抽出しなさい、もしくは 'Danke' じゃないレコードを抽出しなさいと書いてあげましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4),
+  ('Gracias', 15),
+  ('Danke', 23);
+
+-- SELECT * FROM posts;
+-- SELECT id, message FROM posts;
+
+-- > >= < <=
+-- SELECT * FROM posts WHERE likes >= 10;
+
+-- = != <>
+SELECT * FROM posts WHERE message = 'Danke';
+SELECT * FROM posts WHERE message != 'Danke';
+SELECT * FROM posts WHERE message <> 'Danke';
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  5 | Danke   |    23 |
++----+---------+-------+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  2 | Arigato |     4 |
+|  3 | Merci   |     4 |
+|  4 | Gracias |    15 |
++----+---------+-------+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  2 | Arigato |     4 |
+|  3 | Merci   |     4 |
+|  4 | Gracias |    15 |
++----+---------+-------+
+# ↑最初は Danke だけ、次に Danke 以外のレコードが 2 回抽出されているので
+```
+
+こうした操作もできるようになっておきましょう。
+
+### 質問：SELECT、SHOW、DESCの違いがわかりません
+回答：データを抽出できるのはSELECTだけです。それぞれ説明します。
+
+`SELECT`　→　テーブルの中身を抽出するための命令
+
+`DESC`　→　テーブルの構造を確認するための命令
+
+`SHOW` →　サーバーの設定やテーブル名、データベース名などを確認するための命令
+
+上記のようになっております。よって、データを抽出することができるのは、`SELECT`のみとなります。</details>
+
+
+<details><summary>#16 条件を組み合わせてみよう</summary>
+
+条件を組み合わせるためのANDとORについて見ていきましょう。それぞれ、なおかつ、もしくは、という意味になります。
+
+```sql
+-- AND なおかつ
+-- OR  もしくは
+```
+
+例を出していきましょう。likesが10以上、なおかつ20以下のレコードを抽出して見ます。
+
+```sql
+-- AND なおかつ
+-- OR  もしくは
+SELECT * FROM posts WHERE likes >= 10 AND likes <= 20; # なおかつなので、ANDを使う
+```
+
+それから何々以上、何々以下という条件の場合に限っては特殊な書き方もできます。BETWEEN というキーワードを使うのですが、 10 以上 20 以下という表現をするには `BETWEEN 10 AND 20` と書いてあげれば上と全く同じ意味になります。
+
+```sql
+SELECT * FROM posts WHERE likes BETWEEN 10 AND 20;
+```
+
+BETWEENの条件を反転したい場合にはBETWEENの前にNOTを付けてあげればOKです。
+
+```sql
+SELECT * FROM posts WHERE likes NOT BETWEEN 10 AND 20;
+```
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4),
+  ('Gracias', 15),
+  ('Danke', 23);
+
+-- AND なおかつ
+-- OR  もしくは
+SELECT * FROM posts WHERE likes >= 10 AND likes <= 20;
+SELECT * FROM posts WHERE likes BETWEEN 10 AND 20;
+SELECT * FROM posts WHERE likes NOT BETWEEN 10 AND 20;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  4 | Gracias |    15 |
++----+---------+-------+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  4 | Gracias |    15 |
++----+---------+-------+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  2 | Arigato |     4 |
+|  3 | Merci   |     4 |
+|  5 | Danke   |    23 |
++----+---------+-------+
+
+# 3つ目のNOT BETWEENは反転(逆の意味)なので、10以下と20以上のレコードが抽出される
+```
+
+ORの例を見ていきましょう。例えば、likesが4もしくは12のレコードを抽出したかったとします。その場合、もしくはなので、ORを使ってこのように書きます。
+
+```sql
+SELECT * FROM posts WHERE likes = 4 OR likes = 12;
+```
+
+それから ＝ で判定する条件を OR で繋いだ場合、特殊な書き方ができて、 IN を使って書き換えることができます。
+
+```sql
+SELECT * FROM posts WHERE likes IN (4, 12);
+# 上のORの書き方と同じ
+```
+
+それから IN を反転させたい場合にはこちらに NOT を付けてあげてください。
+
+```sql
+SELECT * FROM posts WHERE likes NOT IN (4, 12);
+```
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4),
+  ('Gracias', 15),
+  ('Danke', 23);
+
+-- AND なおかつ
+-- OR  もしくは
+-- SELECT * FROM posts WHERE likes >= 10 AND likes <= 20;
+-- SELECT * FROM posts WHERE likes BETWEEN 10 AND 20;
+-- SELECT * FROM posts WHERE likes NOT BETWEEN 10 AND 20;
+SELECT * FROM posts WHERE likes = 4 OR likes = 12;
+SELECT * FROM posts WHERE likes IN (4, 12);
+SELECT * FROM posts WHERE likes NOT IN (4, 12);
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  2 | Arigato |     4 |
+|  3 | Merci   |     4 |
++----+---------+-------+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  2 | Arigato |     4 |
+|  3 | Merci   |     4 |
++----+---------+-------+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  4 | Gracias |    15 |
+|  5 | Danke   |    23 |
++----+---------+-------+
+# 3つ目のNOT INは、4か12の結果を反転させた結果になる
+```
+
+こうした条件の組み立て方にも慣れておきましょう。
+### 要点まとめ
+- 複数の条件を組み合わせるためのAND、ORの使い方について見ていきます。
+    - AND(なおかつ)
+    - BETWEEN(何々以上何々以下という条件に限って使用可能)
+    - OR(もしくは)
+    - IN(＝ で判定する条件を OR で繋いだ場合にINを使用可能)</details>
+
+
+<details><summary>
