@@ -54,3 +54,112 @@ MySQLでは表形式でデータベースを管理していきます。
 
 
 <details><summary>#04 テーブルを作ってみよう</summary>
+
+※オンラインターミナルが使用できないため、実際にターミナルからMySQLにログインしてプログラムを入力。
+
+1.データベースを作成
+
+```sql
+CREATE DARABASE dotinstall;　
+```
+
+これでdotinstallという名前のデータベースができるので、次に
+
+2.データベースの選択
+
+```sql
+use dotinstall;
+```
+
+として利用するデータベースを選択したのち、レッスンにあったCREATE TABLEを実行する。
+
+オンラインターミナルが使用できるようになったので、ここからはレッスン通りに進める。
+
+テーブルを作るには、`CREATE TABLE` としてあげてテーブル名を書けばいい。
+
+```sql
+CREATE TABLE テーブル名
+```
+
+テーブル名は複数のレコードを管理するので、複数形にすることが多い点に注意しておきましょう。
+
+```sql
+CREATE TABLE posts ();
+```
+
+丸括弧の中に、定義したいカラム(テーブルに格納されている列のデータのこと)を書くのですが、今回はmessageとlikesとします。
+
+```sql
+CREATE TABLE posts (message, likes);
+```
+
+カラムにどのような値を入れるのかを指定する必要があるため、messageは140文字までの文字列、likesは整数という意味でintegerのINT(イント)にする。
+
+```sql
+CREATE TABLE posts (message VARCHAR(140), likes INT);
+```
+
+SQLでは、見やすいように適宜改行や字下げを入れても構いません。
+
+```sql
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+);
+```
+
+テーブルができたか確認したいのですが、 `DESC テーブル名;` とすると、テーブルの構造を確認することができて、 `SHOW TABLES;` とするとテーブルの一覧を確認することができます。
+
+```sql
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+);
+
+DESC posts; # DESC テーブル名; テーブルの構造を確認することができる
+
+SHOW TABLES; # SHOW TABLES; テーブルの一覧を確認することができる
+```
+
+```sql
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+--------------+------+-----+---------+-------+
+| Field   | Type         | Null | Key | Default | Extra |
++---------+--------------+------+-----+---------+-------+
+| message | varchar(140) | YES  |     | NULL    |       |
+| likes   | int(11)      | YES  |     | NULL    |       |
++---------+--------------+------+-----+---------+-------+
+# テーブルの構造
++-----------------+
+| Tables_in_myapp |
++-----------------+
+| posts           |
++-----------------+
+# テーブルの一覧
+
+# messageとlikesが定義され、テーブルの一覧ではpostsテーブルがあるのが分かる
+```
+
+### 質問：SQLなどで大文字を連続して打つ必要があるときについて
+    
+回答：ShiftでもCAPS LOCKでもどちらでもかまいません。
+    
+### 質問：オンラインターミナルで実行しているコードの意味を教えて下さい
+回答：
+
+`~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql` は、下記のような意味となります。
+
+- mysql: mysqlを操作するコマンド
+- h db: mysqlサーバのサーバ名
+- t : 表形式での表示
+- u dbuser: ユーザ名
+- pdbpass: パスワード
+- myapp: データベース名
+- < main.sql: main.sqlの中身をmysqlコマンドに入力
+
+さらなる詳しい説明は、下記の公式サイトを参照してください。[https://dev.mysql.com/doc/refman/5.6/ja/mysql-command-options.html#option_mysql_host](https://dev.mysql.com/doc/refman/5.6/ja/mysql-command-options.html#option_mysql_host)
+### 要点まとめ
+- CREATE TABLEでテーブルを作ったあとに、テーブルの構造を確認していきます。
+    - CREATE TABLE(テーブルを作成)
+    - DESC(`DESC テーブル名;` で、テーブルの構造を確認することができる)
+    - SHOW TABLES(`SHOW TABLES;` テーブルの一覧を確認することができる)
