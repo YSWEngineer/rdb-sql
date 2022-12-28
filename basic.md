@@ -162,4 +162,260 @@ SHOW TABLES; # SHOW TABLES; テーブルの一覧を確認することができ�
 - CREATE TABLEでテーブルを作ったあとに、テーブルの構造を確認していきます。
     - CREATE TABLE(テーブルを作成)
     - DESC(`DESC テーブル名;` で、テーブルの構造を確認することができる)
-    - SHOW TABLES(`SHOW TABLES;` テーブルの一覧を確認することができる)
+    - SHOW TABLES(`SHOW TABLES;` テーブルの一覧を確認することができる)</details>
+
+
+<details><summary>#05 レコードを挿入しよう</summary>
+
+前回のコマンドは、実は再度実行しようとするとエラーになります。
+
+```sql
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+ERROR 1050 (42S01) at line 1: Table 'posts' already exists
+~ $
+# postsは既に存在しているので、新しく作れない
+```
+
+そこで今回は、実行する度にまっさらな状態から始められるように、いったんここでテーブルを削除してあげましょう。
+
+単にテーブルを削除したいなら `DROP TABLE テーブル名`でいいのですが、 posts が存在していなかったらエラーになってしまうので、こちらで　`IF EXISTS` としてあげます。そうすると、postsが存在する時だけ削除するという意味になります。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+);
+
+DESC posts;
+SHOW TABLES;
+
+# コードを実行
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+ERROR 1050 (42S01) at line 1: Table 'posts' already exists
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+--------------+------+-----+---------+-------+
+| Field   | Type         | Null | Key | Default | Extra |
++---------+--------------+------+-----+---------+-------+
+| message | varchar(140) | YES  |     | NULL    |       |
+| likes   | int(11)      | YES  |     | NULL    |       |
++---------+--------------+------+-----+---------+-------+
++-----------------+
+| Tables_in_myapp |
++-----------------+
+| posts           |
++-----------------+
+~ $
+```
+
+レコードを挿入する。INSERT INTO テーブル名として、データを挿入したいカラムの名前をカンマ区切りで渡してあげて、VALUESの後に渡したい値そのものをカンマ区切りで渡す。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+);
+
+DESC posts;
+SHOW TABLES;
+
+INSERT INTO posts (message, likes) VALUES ('Thanks', 12);
+INSERT INTO posts (message, likes) VALUES ('Arigato', 4);
+
+# なお、文字列はシングルクォーテーションか、ダブルクォーテーションで囲うので覚えておくこと
+```
+
+レコードはまとめて挿入することもできて、VALUESのあとにカンマ区切りで書いてあげればOKです。
+
+```sql
+# 上も下も同じ意味
+INSERT INTO posts (message, likes) VALUES ('Thanks', 12);
+INSERT INTO posts (message, likes) VALUES ('Arigato', 4);
+
+INSERT INTO posts (message, likes) VALUES ('Thanks', 12),('Arigato', 4);
+```
+
+挿入したレコードを確認するにはSELECT * FROM テーブル名とする。
+
+```sql
+SELECT * FROM posts; #=> postsテーブルからすべてのレコードを抽出せよという意味になる
+```
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+);
+
+DESC posts;
+SHOW TABLES;
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4);
+  
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+--------------+------+-----+---------+-------+
+| Field   | Type         | Null | Key | Default | Extra |
++---------+--------------+------+-----+---------+-------+
+| message | varchar(140) | YES  |     | NULL    |       |
+| likes   | int(11)      | YES  |     | NULL    |       |
++---------+--------------+------+-----+---------+-------+
++-----------------+
+| Tables_in_myapp |
++-----------------+
+| posts           |
++-----------------+
++---------+-------+
+| message | likes |
++---------+-------+
+| Thanks  |    12 |
+| Arigato |     4 |
++---------+-------+
+~ $
+# 二つのレコードが挿入されているのが確認できる
+```
+
+### 質問：postsテーブルを削除しても、messageやlikesカラムが残っているのは何故ですか？
+    
+回答：DROPで完全に削除した後、CREATEでもう一度postsテーブルを作成しています。
+    
+`DROP` 文ではテーブルは完全に削除されています。ただ、レッスンのクエリは以下の構成になっています。
+
+```sql
+DROP TABLE IF EXISTS posts;    # postsテーブルがあれば削除
+CREATE TABLE posts (           # もう一度postsテーブルを作成
+  message VARCHAR(140),
+  likes INT
+);
+
+DESC posts;   # postsテーブルの定義を表示
+SHOW TABLES;  # 存在するテーブル名を表示
+
+INSERT INTO posts (message, likes) VALUES # postsテーブルにデータを挿入
+  ('Thanks', 12),
+  ('Arigato', 4);
+
+SELECT * FROM posts;  # postsテーブルの中身を表示
+
+```
+
+一度消してからもう一度作るということをしていますので `posts` テーブルの中身が表示されているというわけです。
+### 要点まとめ
+- テーブルの削除およびレコードの挿入方法についてみていきます。
+    - DROP TABLE：テーブルを削除する
+    - INSERT INTO：レコードを挿入する
+    - SELECT：レコードを確認する</details>
+
+
+<details><summary>#06 エラーメッセージを読み解こう</summary>
+
+エラーメッセージの見方について。9行目をセミコロンではなく、カンマにしてしまった場合。MySQLはエラーメッセージが見づらいのですが、見るべきは最後の箇所です。near ‘SELECT * FROM posts’でエラーが出ていると表示されています。このヒントをもとにSELECTの周りを見てあげて、適宜修正するようにしましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+ERROR 1064 (42000) at line 7: You have an error in your SQL syntax
+; check the manual that corresponds to your MariaDB server version
+ for the right syntax to use near 'SELECT * FROM posts' at line 5
+~ $
+```
+
+コメントについて。3つの方法があり、
+
+```sql
+① -- comment
+② # comment #=> 行末までコメントを書くことができる
+③ /*
+	comment
+	comment
+	*/ #=> この場合は何行でもコメントを書いていくことができる
+
+-- comment
+# comment
+/*
+comment
+comment
+*/
+
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4);
+
+SELECT * FROM posts;
+```
+
+コメントはメモ書きに使えますし、実行時に無視されるので、一時的に命令を無効にしたい場合にもよく使われます。
+
+一部をコメントにして実行します。
+
+```sql
+-- comment
+# comment
+/*
+comment
+comment
+*/
+
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+);
+
+INSERT INTO posts (message, likes) VALUES
+  -- ('Thanks', 12),
+  ('Arigato', 4);
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+-------+
+| message | likes |
++---------+-------+
+| Thanks  |    12 |
+| Arigato |     4 |
++---------+-------+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+-------+
+| message | likes |
++---------+-------+
+| Arigato |     4 |
++---------+-------+
+# コメントされた箇所が無効化されて、レコードが1行になっている
+```
+
+コメントのショートカットキー。
+
+```sql
+# macOSの場合、コメントにしたい行にカーソルを合わせて
+command + /
+# VS Codeと同じ
+```
+
+</details>
+
+
+<details><summary>#07 データ型を見ていこう</summary>
+
