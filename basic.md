@@ -1145,3 +1145,127 @@ ERROR 1062 (23000) at line 7: Duplicate entry 'Arigato' for key 'message'
 
 <details><summary>#14 主キーを設定してみよう</summary>
 
+テーブルですが、特定のレコードを処理するために、そのレコードを一意に識別するためのカラムを設定するのが一般的です。たいていの場合、 id という名前で NULL ではない整数の連番にするので、 INT NOT NULL としてあげましょう。また、こうしたレコードを一意に特定するためのカラムですが、 PRIMARY KEY という指定をすることで、 id をこのテーブルのプライマリーキーつまり、主キーにすることができます。主キーにしておくと、 id の値をうっかり入れ忘れたり、値が重複していたときにエラーにしてくれるというメリットがあります。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4);
+
+SELECT * FROM posts;
+```
+
+わざと重複した値を入れてみます。レコードを識別するのに、重複した値だと困ってしまうので、エラーになるはずです。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (id, message, likes) VALUES
+  (1, 'Thanks', 12),
+  (2, 'Arigato', 4),
+  (2, 'Merci', 4);
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+ERROR 1062 (23000) at line 9: Duplicate entry '2' for key 'PRIMARY'
+# 2がDuplicate(重複している)というエラーが表示
+```
+
+2を3に直して、コードを実行。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (id, message, likes) VALUES
+  (1, 'Thanks', 12),
+  (2, 'Arigato', 4),
+  (3, 'Merci', 4);
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  2 | Arigato |     4 |
+|  3 | Merci   |     4 |
++----+---------+-------+
+```
+
+idの連番は、自動で振ることもできます。PRIMARY KEY 指定した場合にしか使えないのですが、こちらで AUTO_INCREMENT としてあげてください。その場合は、値を挿入しなければ自動的に連番になるので、こちらでは id を挿入せずに確かめてみましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+-- INSERT INTO posts (id, message, likes) VALUES
+--   (1, 'Thanks', 12),
+--   (2, 'Arigato', 4),
+--   (3, 'Merci', 4);
+  
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4),
+  ('Merci', 4);
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  2 | Arigato |     4 |
+|  3 | Merci   |     4 |
++----+---------+-------+
+```
+
+レコードを一意に識別できる主キーを設定しておくと、データの操作がしやすくなるので、こうした設定もできるようになっておきましょう。
+### 質問：NOT NULL と AUTO_INCREMENT を同時に指定するのはなぜですか？
+回答：NULL を許可しない、とコードで明示できるからです。
+
+`NOT NULL` をつけることで「 NULL を許可しない」ということをコードで明示することができるのでつけることが多いようです。
+
+なお MySQL 公式のドキュメントにあるサンプルコードでも[https://dev.mysql.com/doc/refman/8.0/ja/example-auto-increment.html](https://dev.mysql.com/doc/refman/8.0/ja/example-auto-increment.html)`NOT NULL AUTO_INCREMENT` となっているので「`NOT NULL` をつけるのが好ましい」というのが MySQL の公式見解だと思われます。
+### 質問：一意に識別する、とは？
+回答：例を挙げて説明します。
+
+「重複するものがない」と言うと分かりやすいかも知れません。
+
+例えば、下記みたいものをイメージして下さい。
+
+社員番号は、一つの番号に一人の社員
+
+商品番号は、一つの番号に一つの商品
+### 要点まとめ
+- レコードを一意に識別するための主キーについて見ていきます。
+    - PRIMARY KEY(プライマリーキー(主キー)の設定)
+    - AUTO_INCREMENT(値を入力しなければ自動的に連番になる設定。PRIMARY KEYを設定した場合に使用ができる)</details>
