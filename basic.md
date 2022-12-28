@@ -1601,4 +1601,87 @@ SELECT * FROM posts WHERE likes NOT IN (4, 12);
     - IN(＝ で判定する条件を OR で繋いだ場合にINを使用可能)</details>
 
 
-<details><summary>
+<details><summary>#17 LIKEと%で文字列を抽出しよう</summary>
+
+文字列の抽出について見ていきますが、完全一致なら今まで見てきたように、=を使ってあげればOKです。
+
+```sql
+SELECT * FROM posts WHERE message = 'Gracias';
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  3 | Gracias |     4 |
++----+---------+-------+
+```
+
+ただ、 LIKE キーワードを使えば特殊な記号も使うことができて、 % で 0 文字以上の任意の文字、 _ で任意の 1 文字を表現することができます。
+
+```sql
+-- %: 0文字以上の任意の文字
+-- _: 任意の1文字
+```
+
+% を使えば前方一位の検索をすることができて、たとえば 't' から始まるメッセージだけを抽出したい場合は、このように書いてあげれば OK です。
+
+```sql
+SELECT * FROM posts WHERE message LIKE 't%';
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+-------------+-------+
+| id | message     | likes |
++----+-------------+-------+
+|  1 | Thank you!  |    12 |
+|  2 | thanks 100% |     4 |
++----+-------------+-------+
+```
+
+ここで大文字小文字を区別したい場合は BINARY (バイナリー)というキーワードを使ってあげてください。
+
+```sql
+SELECT * FROM posts WHERE message LIKE BINARY't%';
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+-------------+-------+
+| id | message     | likes |
++----+-------------+-------+
+|  2 | thanks 100% |     4 |
++----+-------------+-------+
+
+# 小文字のtから始まるレコードだけが抽出できている
+```
+
+また、同様に後方一致や部分一致も % を使えば実現することができます。たとえば 'su' で終わるという条件はこのように書けばいいですし、 'i' を含むという条件はこのように書いてあげれば OK です。
+
+```sql
+SELECT * FROM posts WHERE message LIKE '%su';
+SELECT * FROM posts WHERE message LIKE '%i%';
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+-------------------+-------+
+| id | message           | likes |
++----+-------------------+-------+
+|  4 | Arigato_gozaimasu |    15 |
+|  5 | Arigato! desu     |    23 |
++----+-------------------+-------+
++----+-------------------+-------+
+| id | message           | likes |
++----+-------------------+-------+
+|  3 | Gracias           |     4 |
+|  4 | Arigato_gozaimasu |    15 |
+|  5 | Arigato! desu     |    23 |
++----+-------------------+-------+
+
+# suで終わるレコード、iが含まれるレコードが抽出されている
+```
+
+### 要点まとめ
+- %を使った条件で文字列を抽出する方法について見ていきます。
+    - %(任意の複数の文字を意味する)
+    - LIKE(任意の文字を選択)
+    - BINARY(大文字小文字を区別)</details>
+
+
+<details><summary>#18 LIKEと_で文字列を抽出しよう</summary>
+
