@@ -586,4 +586,129 @@ INSERT INTO posts (message, likes, mood, lang) VALUES
     - CHAR(固定長の文字列の指定)</details>
 
 
+<details><summary>#09 ENUM型を扱ってみよう</summary>
+
+特定の文字列の中からひとつだけを格納できる ENUM (エナム)というデータ型について見ていきましょう。
+
+例えば、category というカラムを作ってあげて ENUM に対して 'Gadget' , 'Game' , 'Business' のうちどれかのみが格納できるよと書いてあげます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+  category ENUM('Gadget', 'Game', 'Business')
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Arigato', 4);
+
+SELECT * FROM posts;
+```
+
+そのうえで値を挿入するには、カラム名を追加してあげて、今羅列した文字列のどれかをそのまま書いてあげれば OK です。ひとつ目のレコードは 'Gadget' 、ふたつ目のレコードは 'Game' としてあげましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+  category ENUM('Gadget', 'Game', 'Business')
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12, 'Gadget'),
+  ('Arigato', 4, 'Game');
+
+SELECT * FROM posts;
+```
+
+このように設定することで、これら以外の値を弾くことができます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT
+  category ENUM('Gadget', 'Game', 'Business')
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12, 'Gadget'),
+  ('Arigato', 4, 'Game'),
+  ('Merci', 4, 'Fashion') # 以外の値を追加
+
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+ERROR 1265 (01000) at line 8: Data truncated for column 'category' at row 3
+~ $
+# categoryのデータがtruncatedされた、つまり切り捨てられたので、エラーが出ている
+```
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT,
+  category ENUM('Gadget', 'Game', 'Business')
+);
+
+INSERT INTO posts (message, likes, category) VALUES
+  ('Thanks', 12, 'Gadget'),
+  ('Arigato', 4, 'Game'),
+  -- ('Merci', 4, 'Fashion');
+  ('Merci', 4, 'Business');
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+-------+----------+
+| message | likes | category |
++---------+-------+----------+
+| Thanks  |    12 | Gadget   |
+| Arigato |     4 | Game     |
+| Merci   |     4 | Business |
++---------+-------+----------+
+~ $
+```
+
+ENUM 型ですが、こちらの値は 1 から始まるインデックス番号でも表現することができて、そのあたりも見ておきましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  message VARCHAR(140),
+  likes INT,
+  category ENUM('Gadget', 'Game', 'Business')
+);
+
+-- INSERT INTO posts (message, likes, category) VALUES
+--   ('Thanks', 12, 'Gadget'),
+--   ('Arigato', 4, 'Game'),
+--   -- ('Merci', 4, 'Fashion');
+--   ('Merci', 4, 'Business');
+  
+INSERT INTO posts (message, likes, category) VALUES
+  ('Thanks', 12, 1),
+  ('Arigato', 4, 2),
+  ('Merci', 4, 3);
+  
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+-------+----------+
+| message | likes | category |
++---------+-------+----------+
+| Thanks  |    12 | Gadget   |
+| Arigato |     4 | Game     |
+| Merci   |     4 | Business |
++---------+-------+----------+
+
+# インデックス番号を指定しても同じ結果になっている。
+```
+
+こうしたENUM型の扱いにも慣れておきましょう。</details>
+
+
 <details><summary>
