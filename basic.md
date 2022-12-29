@@ -1685,3 +1685,86 @@ SELECT * FROM posts WHERE message LIKE '%i%';
 
 <details><summary>#18 LIKEと_で文字列を抽出しよう</summary>
 
+任意の1文字を表す_(アンダーバー、アンダースコア)について。例えば、今回の条件ですが、 message が任意の 1 文字がふたつ続いて、その次が a でその後が 0 文字以上の任意の文字としてみましょう。すると、3 文字目が a のレコードだけがうまく抽出できているのが分かります。
+
+```sql
+SELECT * FROM posts WHERE message LIKE '__a%'
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+-------------+-------+
+| id | message     | likes |
++----+-------------+-------+
+|  1 | Thank you!  |    12 |
+|  2 | thanks 100% |     4 |
+|  3 | Gracias     |     4 |
++----+-------------+-------+
+# 3文字目がaのレコードが抽出されている
+```
+
+LIKE を反転させるには NOT を付けてあげれば OK です。今回の場合は3文字目がa以外のレゴードが抽出されるということ。
+
+```sql
+SELECT * FROM posts WHERE message NOT LIKE '__a%'
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+-------------------+-------+
+| id | message           | likes |
++----+-------------------+-------+
+|  4 | Arigato_gozaimasu |    15 |
+|  5 | Arigato! desu     |    23 |
++----+-------------------+-------+
+# 3文字目がa以外のレゴードが抽出される
+```
+
+% と _ の文字自体を検索したい場合もあるので、その方法も見ていきましょう。例えば、% を含むレコードだけを抽出したくて、 % を含むという意味で部分一致の書き方を使ってこう書いても、実はうまくいきません。
+
+```sql
+SELECT * FROM posts WHERE message LIKE '%%%';
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+-------------------+-------+
+| id | message           | likes |
++----+-------------------+-------+
+|  1 | Thank you!        |    12 |
+|  2 | thanks 100%       |     4 |
+|  3 | Gracias           |     4 |
+|  4 | Arigato_gozaimasu |    15 |
+|  5 | Arigato! desu     |    23 |
++----+-------------------+-------+
+# 全てが抽出されてしまう
+```
+
+%を任意の文字として抽出したい場合は、 抽出したい%の前に\ をその前に付けてあげること。
+
+```sql
+SELECT * FROM posts WHERE message LIKE '%\%%';
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+-------------+-------+
+| id | message     | likes |
++----+-------------+-------+
+|  2 | thanks 100% |     4 |
++----+-------------+-------+
+```
+
+同様に _ が入ったレコードだけを抽出したかったら、 \_ としてあげてください。
+
+```sql
+SELECT * FROM posts WHERE message LIKE '%\_%';
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+-------------------+-------+
+| id | message           | likes |
++----+-------------------+-------+
+|  4 | Arigato_gozaimasu |    15 |
++----+-------------------+-------+
+```
+
+### 要点まとめ
+- _を使った条件で文字列を抽出する方法について見ていきます。
+    - _(任意の1文字を意味する)
+    - \%(%を抽出したい時は%の前に\を付けてあげること)
+    - \_(_も同様、抽出したい_の前に\を付けてあげること)</details>
+
+
+<details><summary>#19 NULL(ナル)のレコードを抽出しよう</summary>
