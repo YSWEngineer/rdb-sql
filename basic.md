@@ -2081,4 +2081,243 @@ FROM
     - ROUND()(四捨五入したい場合)</details>
 
 
+<details><summary>#22 文字列の関数を見ていこう</summary>
+
+文字列を加工する関数について、よく使うものを見ていきましょう。文字列の一部を切り出す関数はSUMSTRING()を使います。では、 message と message の 3 文字目以降を切り出した文字列を抽出してみましょう。
+
+```sql
+SELECT message, SUBSTRING(message, 3) FROM posts;
+```
+
+もしくは、3文字目から2文字分を切り出したい場合は、このように書きます。
+
+```sql
+SELECT message, SUBSTRING(message, 3, 2) FROM posts;
+```
+
+もしくはマイナスの値を与えると、末尾から何文字分という意味になります。
+
+```sql
+SELECT message, SUBSTRING(message, -2) FROM posts;
+```
+
+```sql
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++---------+-----------------------+
+| message | SUBSTRING(message, 3) |
++---------+-----------------------+
+| Thanks  | anks                  |
+| Merci   | rci                   |
+| Arigato | igato                 |
+| Gracias | acias                 |
+| Danke   | nke                   |
++---------+-----------------------+
+# 3文字目以降を切り出した文字列
+
++---------+--------------------------+
+| message | SUBSTRING(message, 3, 2) |
++---------+--------------------------+
+| Thanks  | an                       |
+| Merci   | rc                       |
+| Arigato | ig                       |
+| Gracias | ac                       |
+| Danke   | nk                       |
++---------+--------------------------+
+# 3文字目から2文字分を切り出した文字列
+
++---------+------------------------+
+| message | SUBSTRING(message, -2) |
++---------+------------------------+
+| Thanks  | ks                     |
+| Merci   | ci                     |
+| Arigato | to                     |
+| Gracias | as                     |
+| Danke   | ke                     |
++---------+------------------------+
+# 末尾から2文字分を切り出した文字列
+```
+
+次に文字列の連結ですが、 message といいねの数をハイフンで繋ぎたいなら、 CONCAT() (コンカット)という関数を使ってあげます。連結したい値をカンマ区切りで渡してあげればいいので、このように書いてあげてください。
+
+```sql
+SELECT CONCAT(message, ' - ', likes) FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++-------------------------------+
+| CONCAT(message, ' - ', likes) |
++-------------------------------+
+| Thanks - 12                   |
+| Merci - 4                     |
+| Arigato - 4                   |
+| Gracias - 15                  |
+| Danke - 8                     |
++-------------------------------+
+```
+
+文字数をLENGTH関数で求めることができます。では、messageとmessageの文字数を抽出してみましょう。
+
+```sql
+SELECT message, LENGTH(message) AS len FROM posts;
+
++---------+------+
+| message | len  |
++---------+------+
+| Thanks  |    6 |
+| Merci   |    5 |
+| Arigato |    7 |
+| Gracias |    7 |
+| Danke   |    5 |
++---------+------+
+```
+
+このLENGTH()は、日本語のデータだと少しおかしなことになります。
+
+```sql
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  -- ('Arigato', 4),
+  ('ありがとう', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+
+-- SELECT message, SUBSTRING(message, 3) FROM posts;
+-- SELECT message, SUBSTRING(message, 3, 2) FROM posts;
+-- SELECT message, SUBSTRING(message, -2) FROM posts;
+
+SELECT CONCAT(message, ' - ', likes) FROM posts;
+SELECT message, LENGTH(message) AS len FROM posts;
+
++-------------------------------+
+| CONCAT(message, ' - ', likes) |
++-------------------------------+
+| Thanks - 12                   |
+| Merci - 4                     |
+| ありがとう - 4               　 |
+| Gracias - 15                  |
+| Danke - 8                     |
++-------------------------------+
++-----------------+------+
+| message         | len  |
++-----------------+------+
+| Thanks          |    6 |
+| Merci           |    5 |
+| ありがとう     　 |   15 |
+| Gracias         |    7 |
+| Danke           |    5 |
++-----------------+------+
+# ありがとうの文字数が15と表示される
+```
+
+そのため、日本語の場合はLENGTH()ではなく、CHARLENGTH()にしてください。
+
+```sql
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  -- ('Arigato', 4),
+  ('ありがとう', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+
+-- SELECT message, SUBSTRING(message, 3) FROM posts;
+-- SELECT message, SUBSTRING(message, 3, 2) FROM posts;
+-- SELECT message, SUBSTRING(message, -2) FROM posts;
+
+SELECT CONCAT(message, ' - ', likes) FROM posts;
+SELECT message, LENGTH(message) AS len FROM posts;
+SELECT message, CHAR_LENGTH(message) AS len FROM posts;
+
++-------------------------------+
+| CONCAT(message, ' - ', likes) |
++-------------------------------+
+| Thanks - 12                   |
+| Merci - 4                     |
+| ありがとう - 4                  |
+| Gracias - 15                  |
+| Danke - 8                     |
++-------------------------------+
++-----------------+------+
+| message         | len  |
++-----------------+------+
+| Thanks          |    6 |
+| Merci           |    5 |
+| ありがとう        |   15 |
+| Gracias         |    7 |
+| Danke           |    5 |
++-----------------+------+
++-----------------+------+
+| message         | len  |
++-----------------+------+
+| Thanks          |    6 |
+| Merci           |    5 |
+| ありがとう        |    5 |
+| Gracias         |    7 |
+| Danke           |    5 |
++-----------------+------+
+```
+
+日本語がおかしくなるのは、LENGTH()だけで、SUMSTRING()は正しく動作します。
+
+```sql
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  -- ('Arigato', 4),
+  ('ありがとう', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+
+SELECT message, SUBSTRING(message, 3) FROM posts;
+SELECT message, SUBSTRING(message, 3, 2) FROM posts;
+SELECT message, SUBSTRING(message, -2) FROM posts;
+
+-- SELECT CONCAT(message, ' - ', likes) FROM posts;
+-- SELECT message, LENGTH(message) AS len FROM posts;
+-- SELECT message, CHAR_LENGTH(message) AS len FROM posts;
+
++-----------------+-----------------------+
+| message         | SUBSTRING(message, 3) |
++-----------------+-----------------------+
+| Thanks          | anks                  |
+| Merci           | rci                   |
+| ありがとう      　| がとう                 |
+| Gracias         | acias                 |
+| Danke           | nke                   |
++-----------------+-----------------------+
++-----------------+--------------------------+
+| message         | SUBSTRING(message, 3, 2) |
++-----------------+--------------------------+
+| Thanks          | an                       |
+| Merci           | rc                       |
+| ありがとう      　| がと                      |
+| Gracias         | ac                       |
+| Danke           | nk                       |
++-----------------+--------------------------+
++-----------------+------------------------+
+| message         | SUBSTRING(message, -2) |
++-----------------+------------------------+
+| Thanks          | ks                     |
+| Merci           | ci                     |
+| ありがとう      　| とう                    |
+| Gracias         | as                     |
+| Danke           | ke                     |
++-----------------+------------------------+
+```
+
+こうした操作もできるようになっておきましょう。
+
+### 質問：CHAR_LENGTH は日本語のデータが含まれる場合に使用するのですか？
+    
+回答：はい、マルチバイト文字列が含まれる場合に使用します。
+
+マルチバイト文字列の場合利用するのですが、日本語以外あまり馴染みがありませんので日本語を含む場合使用するという理解で大丈夫かと思います。
+### 要点まとめ
+- 文字列関連の関数を使ってデータを抽出していきます。
+    - SUBSTRING( )(文字列の一部を切り出す)
+    - CONCAT( )(文字列の連結)
+    - LENGTH( )(文字数を求める)
+	  - CHAR_LENGTH( )(日本語を含む場合に使用し、文字数を求める)</details>
+
+
 <details><summary>
