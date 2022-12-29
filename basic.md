@@ -2634,4 +2634,152 @@ SELECT * FROM posts;
 		- UPPER(全てを大文字にする関数)</details>
 
 
+<details><summary>#25 レコードの削除をしてみよう</summary>
+
+こうすると、全てのレコードを削除するのですが、通常は条件を付けるので　likes が 10 より小さいものを削除してみましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+DELETE FROM posts WHERE likes < 10;
+
+SELECT * FROM posts;
+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  4 | Gracias |    15 |
++----+---------+-------+
+# likesが10より小さいものが削除されている
+```
+
+レコードを削除したあとにデータを挿入した場合に、連番がどうなるか見ておきましょう。この時点で 1 から 5 まであったデータが、 1 と 4 だけになったのですが、次が 2 になるのか、 5 になるのか、 6 になるのか気になるところです。
+
+削除したあとに INSERT 文でデータを挿入してみましょう。適当なデータを入れてみます。見てあげると…、こうですね、一度使われた連番は使われずに次の連番である 6 になっているので、こうした挙動にも注意しておきましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+DELETE FROM posts WHERE likes < 10;
+
+INSERT INTO posts (message, likes) VALUES ('Xie Xie', 10);
+
+SELECT * FROM posts;
+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  4 | Gracias |    15 |
+|  6 | Xie Xie |    10 |
++----+---------+-------+
+# 一度使われた連番は使われずに次の連番である6になっている
+```
+
+全件削除した場合でもこれは同じで、こちらで `DELETE FROM posts;` としたあとに INSERT とすると、これでも 6 になっているので注意しておいてください。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+-- DELETE FROM posts WHERE likes < 10;
+DELETE FROM posts;
+
+INSERT INTO posts (message, likes) VALUES ('Xie Xie', 10);
+
+SELECT * FROM posts;
+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  6 | Xie Xie |    10 |
++----+---------+-------+
+# 全権削除した場合でもidは6になっているので注意
+```
+
+ただ、ここで連番を最初から振り直したい場合もあります。その場合は、テーブルごと削除して再作成する、TRUNCATE(トランケイト)を使います。`TRUNCATE TABLE テーブル名`とします。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+-- DELETE FROM posts WHERE likes < 10;
+-- DELETE FROM posts;
+TRUNCATE TABLE posts;
+
+INSERT INTO posts (message, likes) VALUES ('Xie Xie', 10);
+
+SELECT * FROM posts;
+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Xie Xie |    10 |
++----+---------+-------+
+# 連番がリセットされるため、idが1からとなる
+```
+
+### 質問：DROP から CREATE するのと TRUNCATE に違いはありますか？
+    
+回答：同じと考えて大丈夫ですが、TRUNCATE は 1 つのクエリで完了するので効率的です。
+
+`DROP`して`CREATE`しているのと同じと考えていただいていいと思いますが、大きな違いとしては`TRUNCATE`のクエリのみで完了するので`DROP`して`CREATE`するより効率的です。
+### 要点まとめ
+- DELETEやTRUNCATEを使ってレコードを削除する方法について見ていきます。
+    - DELETE(レコードを削除する。通常は条件を付ける)
+    - AUTO_INCREMENTの挙動(指定したカラム(フィールド)に対してデータが追加されると、MySQLが一意の値を自動的に付与する機能のこと、カラムに登録されたデータに連番を自動で付ける際に便利)
+	  - TRUNCATE TABLE(テーブルを削除して、再作成する)</details>
+
+
 <details><summary>
