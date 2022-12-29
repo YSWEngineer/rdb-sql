@@ -2782,4 +2782,109 @@ SELECT * FROM posts;
 	  - TRUNCATE TABLE(テーブルを削除して、再作成する)</details>
 
 
+<details><summary>#26 作成、更新日時を自動で設定しよう</summary>
+
+レコードの作成日時や更新日時を自動で設定する方法を見ていきましょう。では、そのためのカラムを追加していきます。created 、 updated を DATETIME にしておきましょう。そのうえで、 DEFAULT を使ってレコードが挿入された時点での日時を NOW() で設定してあげます。また、レコードが更新された時にその時点での日時を自動で更新することもできて、その場合は ON UPDATE としてあげて、その時点での日時なので NOW() としてあげましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  created DATETIME DEFAULT NOW(),
+  updated DATETIME DEFAULT NOW() ON UPDATE NOW(),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+```
+
+ではここで、 INSERT して結果を表示したあとに SLEEP という命令を使って 3 秒待ってみます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  created DATETIME DEFAULT NOW(),
+  updated DATETIME DEFAULT NOW() ON UPDATE NOW(),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+SELECT id, created, updated FROM posts;
+SELECT SLEEP(3);
+```
+
+そのあとに id が 1 のレコードだけ更新してから、再度 created 、 updated を表示してみましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  created DATETIME DEFAULT NOW(),
+  updated DATETIME DEFAULT NOW() ON UPDATE NOW(),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+SELECT id, created, updated FROM posts;
+SELECT SLEEP(3);
+UPDATE posts SET likes = 100 WHERE id = 1;
+SELECT id, created, updated FROM posts;
+
++----+---------------------+---------------------+
+| id | created             | updated             |
++----+---------------------+---------------------+
+|  1 | 2022-05-30 11:07:47 | 2022-05-30 11:07:47 |
+|  2 | 2022-05-30 11:07:47 | 2022-05-30 11:07:47 |
+|  3 | 2022-05-30 11:07:47 | 2022-05-30 11:07:47 |
+|  4 | 2022-05-30 11:07:47 | 2022-05-30 11:07:47 |
+|  5 | 2022-05-30 11:07:47 | 2022-05-30 11:07:47 |
++----+---------------------+---------------------+
++----------+
+| SLEEP(3) |
++----------+
+|        0 |
++----------+
++----+---------------------+---------------------+
+| id | created             | updated             |
++----+---------------------+---------------------+
+|  1 | 2022-05-30 11:07:47 | 2022-05-30 11:07:50 |
+|  2 | 2022-05-30 11:07:47 | 2022-05-30 11:07:47 |
+|  3 | 2022-05-30 11:07:47 | 2022-05-30 11:07:47 |
+|  4 | 2022-05-30 11:07:47 | 2022-05-30 11:07:47 |
+|  5 | 2022-05-30 11:07:47 | 2022-05-30 11:07:47 |
++----+---------------------+---------------------+
+# idが1のレコードでは現在の時刻と現在の時刻から3秒にupdateが更新されていることが分かる
+```
+
+テーブルにこのようなカラムを追加して自動で更新させることもよくあるので、こうした操作に慣れておきましょう。
+### 要点まとめ
+- DEFAULTやON UPDATEを使って　カラムを自動更新する方法を見ていきます。
+    - DEFAULT NOW()(レコードが挿入された時点での日時を設定)
+  	- DEFAULT NOW() ON UPDATE NOW()(レコードが挿入された時点での日時を設定し、レコードが更新された時にその時点での日時を自動で更新する)</details>
+
+
 <details><summary>
