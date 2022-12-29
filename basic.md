@@ -2887,4 +2887,226 @@ SELECT id, created, updated FROM posts;
   	- DEFAULT NOW() ON UPDATE NOW()(レコードが挿入された時点での日時を設定し、レコードが更新された時にその時点での日時を自動で更新する)</details>
 
 
-<details><summary>
+<details><summary>#27 テーブルの設計を変更してみよう</summary>
+
+いったん作ったテーブルの設計をあとから変更したかった場合の処理を見ていきます。例えばここで、author (オーサー)というカラムをあとから追加したかったとしましょう。その場合は、ALTER TABLEという命令を使います。`テーブル名 ADD` としてあげて、追加したいカラム名とそのデータ型を指定してあげます。では、DESCで確かめてみます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+ALTER TABLE posts ADD author VARCHAR(255);
+DESC posts;
+
++---------+--------------+------+-----+---------+----------------+
+| Field   | Type         | Null | Key | Default | Extra          |
++---------+--------------+------+-----+---------+----------------+
+| id      | int(11)      | NO   | PRI | NULL    | auto_increment |
+| message | varchar(140) | YES  |     | NULL    |                |
+| likes   | int(11)      | YES  |     | NULL    |                |
+| author  | varchar(255) | YES  |     | NULL    |                |
++---------+--------------+------+-----+---------+----------------+
+# authorが追加されている
+```
+
+ここで author を id のあとに追加したかった場合、位置を指定することもできて、こちらで AFTER id としてあげれば OK です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+-- ALTER TABLE posts ADD author VARCHAR(255);
+ALTER TABLE posts ADD author VARCHAR(255) AFTER id;
+
+DESC posts;
+
++---------+--------------+------+-----+---------+----------------+
+| Field   | Type         | Null | Key | Default | Extra          |
++---------+--------------+------+-----+---------+----------------+
+| id      | int(11)      | NO   | PRI | NULL    | auto_increment |
+| author  | varchar(255) | YES  |     | NULL    |                |
+| message | varchar(140) | YES  |     | NULL    |                |
+| likes   | int(11)      | YES  |     | NULL    |                |
++---------+--------------+------+-----+---------+----------------+
+# idの次にauthorが来ている
+```
+
+こちらの AFTER ですが、 BEFORE というキーワードはないのですが、 FIRST というキーワードを使えば最初に入れることはできます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+-- ALTER TABLE posts ADD author VARCHAR(255);
+ALTER TABLE posts ADD author VARCHAR(255) FIRST;
+
+DESC posts;
+
++---------+--------------+------+-----+---------+----------------+
+| Field   | Type         | Null | Key | Default | Extra          |
++---------+--------------+------+-----+---------+----------------+
+| author  | varchar(255) | YES  |     | NULL    |                |
+| id      | int(11)      | NO   | PRI | NULL    | auto_increment |
+| message | varchar(140) | YES  |     | NULL    |                |
+| likes   | int(11)      | YES  |     | NULL    |                |
++---------+--------------+------+-----+---------+----------------+
+# authorが最初に来ている
+```
+
+あとからカラムを削除したかった場合、データも削除されてしまうのですが `ALTER TABLE テーブル名 DROP` としてあげます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+-- ALTER TABLE posts ADD author VARCHAR(255);
+-- ALTER TABLE posts ADD author VARCHAR(255) AFTER id;
+-- ALTER TABLE posts ADD author VARCHAR(255) FIRST;
+ALTER TABLE posts DROP message;
+
+DESC posts;
+
++-------+---------+------+-----+---------+----------------+
+| Field | Type    | Null | Key | Default | Extra          |
++-------+---------+------+-----+---------+----------------+
+| id    | int(11) | NO   | PRI | NULL    | auto_increment |
+| likes | int(11) | YES  |     | NULL    |                |
++-------+---------+------+-----+---------+----------------+
+```
+
+カラムの変更ですが、あとから likes を points に変えたかった場合、 `ALTER TABLE テーブル名 CHANGE` を使ってあげれば OK です。likes を points の整数型にしてあげましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+-- ALTER TABLE posts ADD author VARCHAR(255);
+-- ALTER TABLE posts ADD author VARCHAR(255) AFTER id;
+-- ALTER TABLE posts ADD author VARCHAR(255) FIRST;
+-- ALTER TABLE posts DROP message;
+ALTER TABLE posts CHANGE likes points INT;
+
+DESC posts;
+
++---------+--------------+------+-----+---------+----------------+
+| Field   | Type         | Null | Key | Default | Extra          |
++---------+--------------+------+-----+---------+----------------+
+| id      | int(11)      | NO   | PRI | NULL    | auto_increment |
+| message | varchar(140) | YES  |     | NULL    |                |
+| points  | int(11)      | YES  |     | NULL    |                |
++---------+--------------+------+-----+---------+----------------+
+```
+
+CHANGE を使った場合、 MySQL はなるべく既存のデータを変換して保持しようとしますが、データが消えてしまうこともあるので十分注意しましょう。
+
+テーブルの名前をあとから変える方法ですが、 `ALTER TABLE テーブル名 RENAME` で新しい名前としてあげれば OK です。SHOW TABLES で見てあげましょう。ただし、すでに messages テーブルがあったときにエラーになってしまうと困るので、 DROP TABLE IF EXISTS messages としておきます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+-- ALTER TABLE posts ADD author VARCHAR(255);
+-- ALTER TABLE posts ADD author VARCHAR(255) AFTER id;
+-- ALTER TABLE posts ADD author VARCHAR(255) FIRST;
+-- ALTER TABLE posts DROP message;
+-- ALTER TABLE posts CHANGE likes points INT;
+DROP TABLE IF EXISTS messages;
+ALTER TABLE posts RENAME messages;
+SHOW TABLES;
+
+-- DESC posts;
+
++-----------------+
+| Tables_in_myapp |
++-----------------+
+| messages        |
++-----------------+
+```
+
+### 質問：DESCの用途はなんですか？
+    
+回答：デーブルの構造を確認する際に使います。
+
+`DESC` を使うとテーブルの構造を確認することができます。`DESCRIBE` の省略形式です。
+
+こちらのレッスンで扱われていますのであわせて復習していただけると理解が深まるかと思います。
+
+[#04 テーブルを作ってみよう | MySQL入門 基礎編](https://dotinstall.com/lessons/basic_mysql_beginner/55404)
+### 要点まとめ
+- ALTER TABLEを使って後からテーブルの設計を変更する方法について見ていきます。
+    - ALTER TABLE ... ADD ...
+    - ALTER TABLE ... DROP ...
+    - ALTER TABLE ... CHANGE ...
+    - ALTER TABLE ... RENAME ...</details>
