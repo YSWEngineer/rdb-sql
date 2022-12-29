@@ -1768,3 +1768,204 @@ SELECT * FROM posts WHERE message LIKE '%\_%';
 
 
 <details><summary>#19 NULL(ナル)のレコードを抽出しよう</summary>
+
+NULLについて。とりあえず、全てのレコードを抽出して見ます。
+
+```sql
+SELECT * FROM posts;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  2 | Arigato |     4 |
+|  3 | Merci   |  NULL |
+|  4 | Gracias |    15 |
+|  5 | Danke   |  NULL |
++----+---------+-------+
+# NULLもちゃんと抽出されています
+```
+
+次に SELECT * FROM posts WHERE likes != 12 としてみましょう。その場合 12 以外が抽出されるのですが、 NULL のレコードがどうなるか見ておきましょう。見てみると NULL のレコードは結果に含まれていないのが分かります。
+
+```sql
+SELECT * FROM posts WHERE likes != 12;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  2 | Arigato |     4 |
+|  4 | Gracias |    15 |
++----+---------+-------+
+# この場合、NULLのレコードは結果に含まれていない
+```
+
+NULLも含まれるようにしたかった場合は、ORを使い、`likes IS NULL`と書きます。
+
+```sql
+SELECT * FROM posts WHERE likes != 12 OR likes IS NULL;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  2 | Arigato |     4 |
+|  3 | Merci   |  NULL |
+|  4 | Gracias |    15 |
+|  5 | Danke   |  NULL |
++----+---------+-------+
+# NULLのレコードも抽出されている
+```
+
+IS NULL ですが、この条件を反転させたかった場合は、 `IS NOT NULL` としてあげる必要があります。
+
+```sql
+SELECT * FROM posts WHERE likes IS NOT NULL;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  2 | Arigato |     4 |
+|  4 | Gracias |    15 |
++----+---------+-------+
+# NULL以外のレコードが抽出されている
+```
+
+データにNULLが入っている時は抽出条件に注意が必要なので、意識しておいてください。
+### 要点まとめ
+- NULLを抽出条件に含める方法を見ていきます。
+    - IS NULL(ORを使用して、NULLを含むデータを抽出する)
+	  - IS NOT NULL(NULLを含まないものを抽出する(IS NULLを反転させる))</details>
+
+
+<details><summary>#20 抽出結果を並び替えよう</summary>
+
+抽出結果を並び替えてみましょう。たとえば、 likes を小さい順で並び替えたかったら、 `SELECT * FROM posts ORDER BY likes` としてあげます。一方、逆に並べたい場合は、`SELECT * FROM posts ORDER BY likes DESC`とDESCというキーワードを付けます。
+
+```sql
+SELECT * FROM posts ORDER BY likes;
+SELECT * FROM posts ORDER BY likes DESC;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  2 | Merci   |     4 |
+|  3 | Arigato |     4 |
+|  5 | Danke   |     8 |
+|  1 | Thanks  |    12 |
+|  4 | Gracias |    15 |
++----+---------+-------+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  4 | Gracias |    15 |
+|  1 | Thanks  |    12 |
+|  5 | Danke   |     8 |
+|  2 | Merci   |     4 |
+|  3 | Arigato |     4 |
++----+---------+-------+
+# ORDER BYは小さい順、ORDER BY...DESCは大きい順
+```
+
+likes の数が同じだったときに、アルファベット順に並び替えたかったら、カンマ区切りでさらに message を加えてあげれば OK です。
+
+```sql
+SELECT * FROM posts ORDER BY likes DESC, message;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  4 | Gracias |    15 |
+|  1 | Thanks  |    12 |
+|  5 | Danke   |     8 |
+|  3 | Arigato |     4 |
+|  2 | Merci   |     4 |
++----+---------+-------+
+```
+
+それからこの状態で、上位 3 件だけ抽出したかった場合、 LIMIT というキーワードが使えます。
+
+```sql
+SELECT * FROM posts ORDER BY likes DESC, message;
+SELECT * FROM posts ORDER BY likes DESC, message LIMIT 3;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  4 | Gracias |    15 |
+|  1 | Thanks  |    12 |
+|  5 | Danke   |     8 |
+|  3 | Arigato |     4 |
+|  2 | Merci   |     4 |
++----+---------+-------+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  4 | Gracias |    15 |
+|  1 | Thanks  |    12 |
+|  5 | Danke   |     8 |
++----+---------+-------+
+# 上位3件が抽出されている
+```
+
+それから何らかの理由で、最初の 2 件を除外して、その後 3 件という抽出をしたい場合、先頭 0 から数えて 0、1、2 件目から 3 件分抽出したいという書き方をします。OFFSET というキーワードを使うのですが、抽出するのは 3 件で、 0 1 2 件目からというのは OFFSET 2 と書いてあげてください。
+
+```sql
+SELECT * FROM posts ORDER BY likes DESC, message LIMIT 3 OFFSET 2;
+# 2件目から上位3件を抽出する、という意味
+```
+
+それから別の書き方もできて、先頭から数えて 0 1 2 件目から 3 件分といった書き方をすれば OK です。
+
+```sql
+SELECT * FROM posts ORDER BY likes DESC, message LIMIT 2, 3;
+# 先頭から0、1、2件目から3件分を抽出する、という意味。
+```
+
+```sql
+SELECT * FROM posts ORDER BY likes DESC, message;
+SELECT * FROM posts ORDER BY likes DESC, message LIMIT 3 OFFSET 2;
+SELECT * FROM posts ORDER BY likes DESC, message LIMIT 2, 3;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  4 | Gracias |    15 |
+|  1 | Thanks  |    12 |
+|  5 | Danke   |     8 |
+|  3 | Arigato |     4 |
+|  2 | Merci   |     4 |
++----+---------+-------+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  5 | Danke   |     8 |
+|  3 | Arigato |     4 |
+|  2 | Merci   |     4 |
++----+---------+-------+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  5 | Danke   |     8 |
+|  3 | Arigato |     4 |
+|  2 | Merci   |     4 |
++----+---------+-------+
+```
+
+### 質問：先頭の行2件が除外されて上位3件が表示される仕組みがわかりません。
+    
+回答：LIMIT で件数を指定し、 OFFSET で何件目のレコードから結果を返すかを指定しています。
+
+`OFFSET` は何件目のレコードから結果を返すかを指定するものになります。但し、 0 から数えますので 3 件目からのレコードが欲しい場合は `OFFSET 2` を指定することになります。
+
+また、 `LIMIT` は結果に欲しい件数を指定するものでしたので `LIMIT 3` を指定すると 3 件の結果が得られます。 `OFFSET` と `LIMIT` を組み合わせて `LIMIT 3 OFFSET 2` のように指定すると 3 件目から数えて 3 件のレコードを結果として返します。
+
+最後に説明した `LIMIT 2, 3` は `LIMIT 3 OFFSET 2` と同じ意味で、このように `LIMIT` だけで記述することもできます。</details>
