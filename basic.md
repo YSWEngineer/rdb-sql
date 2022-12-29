@@ -2514,4 +2514,124 @@ DATE_FORMAT(DATE_ADD(created, INTERVAL 7 DAY), '%M %D %Y, %W') AS next
 		- DATEDIFF( )(現在の日付からどれくらい前なのかを知る)</details>
 
 
+<details><summary>#24 レコードの更新をしてみよう</summary>
+
+これまでデータを加工して抽出する方法について見ていきましたが、たとえば `likes` に 10 を渡して抽出したとしても、元データの値が変わるわけではありません。したがって、この後に `SELECT * FROM posts` としても、ちゃんと元データが表示されるはずです。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+SELECT likes + 10 FROM posts;
+SELECT * FROM posts;
+
++------------+
+| likes + 10 |
++------------+
+|         22 |
+|         14 |
+|         14 |
+|         25 |
+|         18 |
++------------+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    12 |
+|  2 | Merci   |     4 |
+|  3 | Arigato |     4 |
+|  4 | Gracias |    15 |
+|  5 | Danke   |     8 |
++----+---------+-------+
+# 元のデータは変更されていない
+```
+
+ただ、元のデータ自体を更新したい場合もあります。その場合はUPDATEを使います。UPDATE テーブル名 SET で、更新したいカラムに新しい値をセットしてあげます。
+
+```sql
+-- SELECT likes + 10 FROM posts;
+UPDATE posts SET likes = likes + 5;
+SELECT * FROM posts;
+```
+
+このようにすればすべてのレコードが更新されますが、条件をつけて特定のレコードだけ更新することもできます。では likes が 10 以上のものについて likes を 5 増やしてみましょう。
+
+```sql
+-- SELECT likes + 10 FROM posts;
+UPDATE posts SET likes = likes + 5 WHERE likes >= 10;
+SELECT * FROM posts;
+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | Thanks  |    17 |
+|  2 | Merci   |     4 |
+|  3 | Arigato |     4 |
+|  4 | Gracias |    20 |
+|  5 | Danke   |     8 |
++----+---------+-------+
+# 10以上のレコードだけ5点増えているのが分かる
+```
+
+複数のカラムの値を一気に更新することもできます。`UPDATE テーブル名 SET` で likes は今の likes より 5 点増やしてね、と書いてあげます。複数のカラムを更新するにはカンマ区切りで書いていきます。message を UPPER() の message にしてあげましょう。likes が 10 以上のレコードについてそのような処理をしてみましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('Thanks', 12),
+  ('Merci', 4),
+  ('Arigato', 4),
+  ('Gracias', 15),
+  ('Danke', 8);
+  
+-- SELECT likes + 10 FROM posts;
+-- UPDATE posts SET likes = likes + 5 WHERE likes >= 10;
+UPDATE
+  posts
+SET
+  likes = likes + 5,
+  message = UPPER(message) # UPPER()は全てを大文字にする関数
+WHERE
+  likes >= 10;
+SELECT * FROM posts;
+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | THANKS  |    17 |
+|  2 | Merci   |     4 |
+|  3 | Arigato |     4 |
+|  4 | GRACIAS |    20 |
+|  5 | Danke   |     8 |
++----+---------+-------+
+# likesが10以上のレコードにlikesの数を5点増やし、大文字に変更する 
+
+```
+
+こうしたデータの更新もできるようになっておきましょう。
+### 要点まとめ
+- UPDATEを使ってレコードを更新する方法を見ていきます。
+    - UPDATE(データ自体を更新)
+		- UPPER(全てを大文字にする関数)</details>
+
+
 <details><summary>
