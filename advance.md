@@ -455,4 +455,115 @@ GROPU BYした結果に抽出条件を設定できるHAVINGについて見てい
 - WHEREを使う場合の注意点：WHEREはGROUP BYより先に処理されるので、GROUP BYより後ろに書いてはいけないというルールがある</details>
 
 
+<details><summary>#04 IF()、CASEを扱ってみよう</summary>
+
+条件によって違う値を抽出する方法について見ていきましょう。たとえば、 likes の数に応じてチームを分けてみたいといったシーンを想定してみます。では、 10 より大きかったら A チーム、それ以外は B チームとしたい場合、 IF likes が 10 より大きかったら A 、そうじゃなかったら B と書いてあげます。分かりやすく team という別名にしてあげて、抽出してみましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+  
+SELECT
+  *,
+  IF(likes > 10, 'A', 'B') AS team # likesの数が10より多い場合はAチーム、それ以外はBチーム
+FROM
+  posts;
+
++----+---------+-------+---------+------+
+| id | message | likes | area    | team |
++----+---------+-------+---------+------+
+|  1 | post-1  |    12 | Tokyo   | A    |
+|  2 | post-2  |     8 | Fukuoka | B    |
+|  3 | post-3  |    11 | Tokyo   | A    |
+|  4 | post-4  |     3 | Osaka   | B    |
+|  5 | post-5  |     8 | Tokyo   | B    |
+|  6 | post-6  |     9 | Osaka   | B    |
+|  7 | post-7  |     4 | Tokyo   | B    |
+|  8 | post-8  |    10 | Osaka   | B    |
+|  9 | post-9  |    31 | Fukuoka | A    |
++----+---------+-------+---------+------+
+```
+
+もしくは CASE という命令も使えて、その場合はいくらでも条件を増やせるので、たとえば、 likes が 10 より大きかったら A チーム、 10 以下だけど 5 より大きかったら B チーム、そしてそれ以外は C チームと書きたい場合は、このように書いてあげれば OK です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+  
+-- SELECT
+--   *,
+--   IF(likes > 10, 'A', 'B') AS team
+-- FROM
+--   posts;
+
+SELECT
+  *,
+  CASE
+    WHEN likes > 10 THEN 'A' # likesの数が10より多い場合はAチーム
+    WHEN likes > 5 THEN 'B' # likesの数が10以下だけど、5より多い場合はBチーム
+    ELSE 'C' # それ以外はCチーム
+  END AS team
+FROM
+  posts;
+
++----+---------+-------+---------+------+
+| id | message | likes | area    | team |
++----+---------+-------+---------+------+
+|  1 | post-1  |    12 | Tokyo   | A    |
+|  2 | post-2  |     8 | Fukuoka | B    |
+|  3 | post-3  |    11 | Tokyo   | A    |
+|  4 | post-4  |     3 | Osaka   | C    |
+|  5 | post-5  |     8 | Tokyo   | B    |
+|  6 | post-6  |     9 | Osaka   | B    |
+|  7 | post-7  |     4 | Tokyo   | C    |
+|  8 | post-8  |    10 | Osaka   | B    |
+|  9 | post-9  |    31 | Fukuoka | A    |
++----+---------+-------+---------+------+
+```
+
+こうした処理も書けるようになっておきましょう。
+### 質問：IFの省略した書き方がよくわかりません。
+回答：ドキュメントを参照してみると良いでしょう。
+
+`IF ( likes > 10,  'A',  'B' )  AS team  FROM  posts;`
+
+１つ目の条件式(likes > 10)が真の場合２番目の値(’A’)を、１つ目の条件式(likes > 10)が偽の場合３番目(’B’)の値を返します。
+
+こちらも参照してみてください。[https://dev.mysql.com/doc/refman/5.6/ja/control-flow-functions.html#function_if](https://dev.mysql.com/doc/refman/5.6/ja/control-flow-functions.html#function_if)</details>
+
+
 <details><summary>
