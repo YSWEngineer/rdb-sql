@@ -865,3 +865,276 @@ SELECT * FROM posts_tokyo_view;
 
 
 <details><summary>#07 UNIONで抽出結果をまとめよう
+
+UNION について見ていきたいのですが、例を出していきます。likesの大きい順に並び替えてみましょう。`ORDER BY likes DESC` でいいですね。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT * FROM posts ORDER BY likes DESC; # DESCは大きい(多い)順に並び替える命令
+
++----+---------+-------+---------+
+| id | message | likes | area    |
++----+---------+-------+---------+
+|  9 | post-9  |    31 | Fukuoka |
+|  1 | post-1  |    12 | Tokyo   |
+|  3 | post-3  |    11 | Tokyo   |
+|  8 | post-8  |    10 | Osaka   |
+|  6 | post-6  |     9 | Osaka   |
+|  2 | post-2  |     8 | Fukuoka |
+|  5 | post-5  |     8 | Tokyo   |
+|  7 | post-7  |     4 | Tokyo   |
+|  4 | post-4  |     3 | Osaka   |
++----+---------+-------+---------+
+# DESCでlikesの多い順に並んでいる
+```
+
+では、ここでこちらの上位 3 名と最後の 1 つだけを抽出したかったとします。その場合のクエリを書いていきましょう。
+
+- まず上位3名は、そのまま`LIMIT 3`としてあげればいいですね。
+- 1番下のレコードは、小さい順に並び替えて1個取り出してあげればOKです。
+
+SELECT * FROM posts ORDER BY likes DESC;をコメントにして、コードを実行します。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+-- SELECT * FROM posts ORDER BY likes DESC;
+
+SELECT * FROM posts ORDER BY likes DESC LIMIT 3;
+SELECT * FROM posts ORDER BY likes LIMIT 1;
+
++----+---------+-------+---------+
+| id | message | likes | area    |
++----+---------+-------+---------+
+|  9 | post-9  |    31 | Fukuoka |
+|  1 | post-1  |    12 | Tokyo   |
+|  3 | post-3  |    11 | Tokyo   |
++----+---------+-------+---------+
++----+---------+-------+-------+
+| id | message | likes | area  |
++----+---------+-------+-------+
+|  4 | post-4  |     3 | Osaka |
++----+---------+-------+-------+
+# 上位3名と最後のレコードの抽出ができている
+```
+
+ここで、これらをひとつの結果として出したい場合、UNIONを使うことができます。
+
+どうするかというと、こちらのクエリと、下のクエリを、 UNION ALL でこのようにつなげてあげれば OK です。
+
+こちらのクエリですが、ここからここまでがひとつのクエリなので、セミコロンは最後にひとつしか付かない点に注意しておいてください。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+-- SELECT * FROM posts ORDER BY likes DESC;
+
+(SELECT * FROM posts ORDER BY likes DESC LIMIT 3)
+UNION ALL
+(SELECT * FROM posts ORDER BY likes LIMIT 1);
+
++----+---------+-------+---------+
+| id | message | likes | area    |
++----+---------+-------+---------+
+|  9 | post-9  |    31 | Fukuoka |
+|  1 | post-1  |    12 | Tokyo   |
+|  3 | post-3  |    11 | Tokyo   |
+|  4 | post-4  |     3 | Osaka   |
++----+---------+-------+---------+
+# 結果が縦に繋がっている
+```
+
+UNION を使う場合、この 2 つのクエリのカラム数とデータ型が一致している必要がありますが、結果をこのように縦に繋げたいときに便利なので、使いこなせるようにしておきましょう。
+### 質問：UNION ALLの前後の文を()で囲むときと囲まないときとの違いはなんですか？
+回答：SELECT 句に ORDER BY または LIMIT を使う際はカッコで囲い、そうでない場合はそのまま記述できるようです。
+
+リファレンスを参照したところ以下の記述が見つかりました
+
+> 個々の SELECT に ORDER BY または LIMIT を適用するには、この句を SELECT を囲む括弧内に配置します。https://dev.mysql.com/doc/refman/5.6/ja/union.html
+> 
+
+どうやら`SELECT`句に`ORDER BY`または`LIMIT`を使う際はカッコで囲い、そうでない場合はそのまま記述できるということのようです。
+### 要点まとめ
+複数の抽出結果を一つの結果としてまとめる方法を見ていきます。
+
+- UNION ALL：クエリとクエリを一つに繋げることができる ※繋げるクエリのカラム数とデータ型が一致している必要がある</details>
+
+
+<details><summary>#08 サブクエリを使ってみよう</summary>
+
+先ずは全てのレコードを表示してみましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT * FROM posts;
+
++----+---------+-------+---------+
+| id | message | likes | area    |
++----+---------+-------+---------+
+|  1 | post-1  |    12 | Tokyo   |
+|  2 | post-2  |     8 | Fukuoka |
+|  3 | post-3  |    11 | Tokyo   |
+|  4 | post-4  |     3 | Osaka   |
+|  5 | post-5  |     8 | Tokyo   |
+|  6 | post-6  |     9 | Osaka   |
+|  7 | post-7  |     4 | Tokyo   |
+|  8 | post-8  |    10 | Osaka   |
+|  9 | post-9  |    31 | Fukuoka |
++----+---------+-------+---------+
+```
+
+ここで、likesの平均を横に表示したかった場合、普通に考えると、*のあとにlikesの平均を`SELECT *, AVG(likes) AS avg FROM posts;`と　表示すればいいと思うかもしれませんが、これではうまくいきません。AVG 関数は全てのレコードを集計してひとつのレコードにしてしまうので、このような結果になってしまいます。
+
+```sql
+SELECT *, AVG(likes) AS avg FROM posts;
+
++------+---------+-------+-------+---------+
+| id   | message | likes | area  | avg     |
++------+---------+-------+-------+---------+
+|    1 | post-1  |    12 | Tokyo | 10.6667 |
++------+---------+-------+-------+---------+
+```
+
+そこで、改行を入れながら見やすくクエリを書いていきましょう。どうするかというと、SELECTの中でさらにSELECT文を使ってあげればOKです。普通の SELECT の結果に加えて、レコードごとに集計関数を使うことで、うまく結果が表示されます。
+
+```sql
+-- SELECT *, AVG(likes) AS avg FROM posts;
+SELECT
+  *,
+  (SELECT AVG(likes) FROM posts) AS avg
+FROM
+  posts;
+
++----+---------+-------+---------+---------+
+| id | message | likes | area    | avg     |
++----+---------+-------+---------+---------+
+|  1 | post-1  |    12 | Tokyo   | 10.6667 |
+|  2 | post-2  |     8 | Fukuoka | 10.6667 |
+|  3 | post-3  |    11 | Tokyo   | 10.6667 |
+|  4 | post-4  |     3 | Osaka   | 10.6667 |
+|  5 | post-5  |     8 | Tokyo   | 10.6667 |
+|  6 | post-6  |     9 | Osaka   | 10.6667 |
+|  7 | post-7  |     4 | Tokyo   | 10.6667 |
+|  8 | post-8  |    10 | Osaka   | 10.6667 |
+|  9 | post-9  |    31 | Fukuoka | 10.6667 |
++----+---------+-------+---------+---------+
+```
+
+このようにクエリの中で使うクエリのことをサブクエリと呼ぶので、用語として覚えておいてください。サブクエリを駆使すればかなり複雑なことができますが、その分クエリがこのように長くなったり、速度が遅くなったりするので、データが多いときには注意して使う必要があるという点も注意しておきましょう。
+
+```sql
+SELECT
+  *,
+  (SELECT AVG(likes) FROM posts) AS avg -- sub query
+FROM
+  posts;
+```
+
+### 質問：なぜ SELECT * ,AVG(likes) AS avg FROM posts; で avg のカラムが追加されるのですか？
+    
+```sql
+SELECT * ,AVG(likes) AS avg FROM posts;
+
+```
+
+とすると、テーブルに `avg` のカラムが追加されるのは何故でしょうか。
+
+```sql
+INSERT INTO posts(message, likes, area) VALUES
+
+```
+
+の `()` 内に `avg` が追加で入ることでとカラムは追加になるのではないでしょうか。
+
+回答：カラムを追加しているのではなく、AVG(likes) で得られる値を avg として表示しています。
+
+この場合は、テーブルにカラムが追加されているわけではなく`SELECT`の結果に`AVG(likes)`で得られる値を`avg`として表示しております。`SELECT`で表示される結果の列は必ずしもテーブルのカラムに対応しているわけではありません。
+### 質問：なぜサブクエリを使うと結果が posts レコード全てに追加されるのですか？
+回答：順を追って説明していきます。
+
+`AVG` などの関数は集約関数と呼ばれておりまして、`SELECT *, AVG(likes) AS avg FROM posts;`こちらの場合は全てのレコードを"集約"して平均を求めています、その結果平均を計算した1レコードのみになります。
+
+サブクエリの場合は、まずサブクエリの結果を求めてそれを `posts` のレコード全てに追加のカラムとして結合していると考えていただいて間違いないかと思います。サブクエリの結果は上のクエリと同様に全てのレコードから計算した平均値ですのでまずこれがもとまります。その結果を `posts` のレコード全てに追加していくので、全レコード + 平均値というような結果が返されます。
+### 要点まとめ
+クエリのなかでクエリを使う方法について見ていきましょう。
+
+- サブクエリ：クエリの中で使うクエリのこと、sub query
+- サブクエリを使うときの注意点：サブクエリを駆使すればかなり複雑なことができますが、その分クエリが長くなったり、速度が遅くなったりするので、データが多いときには注意して使う必要がある</details>
+
+
+<details><summary>#09 相関サブクエリを使ってみよう</summary>
+
