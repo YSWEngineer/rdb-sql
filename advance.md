@@ -563,7 +563,148 @@ FROM
 
 １つ目の条件式(likes > 10)が真の場合２番目の値(’A’)を、１つ目の条件式(likes > 10)が偽の場合３番目(’B’)の値を返します。
 
-こちらも参照してみてください。[https://dev.mysql.com/doc/refman/5.6/ja/control-flow-functions.html#function_if](https://dev.mysql.com/doc/refman/5.6/ja/control-flow-functions.html#function_if)</details>
+こちらも参照してみてください。[https://dev.mysql.com/doc/refman/5.6/ja/control-flow-functions.html#function_if](https://dev.mysql.com/doc/refman/5.6/ja/control-flow-functions.html#function_if)
+
+### 要点まとめ
+条件によって違う値を抽出する方法について見ていきます。
+
+- IF()：条件によって違う値を抽出する方法
+- CASE：IFと違い、いくらでも条件を増やすことができる</details>
+
+
+<details><summary>#05 抽出結果を別のテーブルにしよう</summary>
+
+抽出結果を別テーブルとして切り出す方法を見ていきます。`CREATE TABLE テーブル名`としたあとに AS に続けて抽出条件を指定してあげれば OK です。今回は area が Tokyo のレコードだけを抽出して posts_tokyo というテーブルにしてあげましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+CREATE TABLE posts_tokyo AS SELECT * FROM posts WHERE area = 'Tokyo';
+```
+
+この考え方を使えばテーブルのコピーを作ることもできますね。テーブル名は posts_copy としてあげて、 AS に続ける抽出条件で WHERE を外してあげれば、全てのレコードが posts_copy にコピーされるはずです。
+
+```sql
+CREATE TABLE posts_tokyo AS SELECT * FROM posts WHERE area = 'Tokyo';
+CREATE TABLE posts_copy AS SELECT * FROM posts;
+```
+
+データの構造だけコピーして中身のレコードはいらないよ、という場合は LIKE テーブル名としてあげれば OK です。
+
+```sql
+CREATE TABLE posts_tokyo AS SELECT * FROM posts WHERE area = 'Tokyo';
+CREATE TABLE posts_copy AS SELECT * FROM posts;
+CREATE TABLE posts_skeleton LIKE posts;
+```
+
+それから、これらのテーブルが既に存在していたらエラーになってしまうので、実行する度にそれぞれのテーブルを消してあげたいので DROP TABLE IF EXISTS を使っておいてあげましょう。
+
+```sql
+DROP TABLE IF EXISTS posts_tokyo;
+CREATE TABLE posts_tokyo AS SELECT * FROM posts WHERE area = 'Tokyo';
+CREATE TABLE posts_copy AS SELECT * FROM posts;
+CREATE TABLE posts_skeleton LIKE posts;
+```
+
+では、 posts_tokyo 、 posts_copy 、 posts_skeleton が存在していたら、削除すると書いておきましょう。そのうえで SHOW TABLES でテーブルの一覧を表示してみます。それから、それぞれのテーブルの中身も表示してみましょう。posts_tokyo の中身、そして posts_copy の中身、そして skeleton のほうは中身が何もないので、表示はされませんが、一応確かめてみましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+DROP TABLE IF EXISTS posts_tokyo;
+CREATE TABLE posts_tokyo AS SELECT * FROM posts WHERE area = 'Tokyo';
+
+DROP TABLE IF EXISTS posts_copy;
+CREATE TABLE posts_copy AS SELECT * FROM posts;
+
+DROP TABLE IF EXISTS posts_skeleton;
+CREATE TABLE posts_skeleton LIKE posts;
+
+SHOW TABLES;
+SELECT * FROM posts_tokyo;
+SELECT * FROM posts_copy;
+SELECT * FROM posts_skeleton;
+
++-----------------+
+| Tables_in_myapp |
++-----------------+
+| posts           |
+| posts_copy      |
+| posts_skeleton  |
+| posts_tokyo     |
++-----------------+
+# SHOW TABLES;
++----+---------+-------+-------+
+| id | message | likes | area  |
++----+---------+-------+-------+
+|  1 | post-1  |    12 | Tokyo |
+|  3 | post-3  |    11 | Tokyo |
+|  5 | post-5  |     8 | Tokyo |
+|  7 | post-7  |     4 | Tokyo |
++----+---------+-------+-------+
+# SELECT * FROM posts_tokyo;
++----+---------+-------+---------+
+| id | message | likes | area    |
++----+---------+-------+---------+
+|  1 | post-1  |    12 | Tokyo   |
+|  2 | post-2  |     8 | Fukuoka |
+|  3 | post-3  |    11 | Tokyo   |
+|  4 | post-4  |     3 | Osaka   |
+|  5 | post-5  |     8 | Tokyo   |
+|  6 | post-6  |     9 | Osaka   |
+|  7 | post-7  |     4 | Tokyo   |
+|  8 | post-8  |    10 | Osaka   |
+|  9 | post-9  |    31 | Fukuoka |
++----+---------+-------+---------+
+# SELECT * FROM posts_copy;
+
+# SELECT * FROM posts_skeleton;はからのテーブルなので何も表示されない
+```
+
+3 つのテーブルが追加されていて、次が Tokyo だけのテーブル、その次がコピーなので全てのレコード、そして最後は空のテーブルで何も表示されていないので、うまくいっているようです。
+
+テーブルから別のテーブルを作る方法も知っておきましょう。
+### 要点まとめ
+抽出結果を別テーブルとして切り出す方法を見ていきます。
+
+- CREATE TABLE ... AS ...：テーブルから別テーブルを作成する
+- CREATE TABLE ... LIKE ...：データの構造だけコピーして中身のレコードはいらないよ、という場合は`LIKE テーブル名`とする</details>
 
 
 <details><summary>
