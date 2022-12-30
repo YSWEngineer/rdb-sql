@@ -265,4 +265,194 @@ GROPU BYを使って、エリアごとの合計を集計する方法について
 - GROUP BY：レコードをグループ化してくれる。</details>
 
 
+<details><summary>#03 HAVINGで抽出条件を指定しよう</summary>
+
+今はarea毎のlikesの合計が出ている状態です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT area, SUM(likes) FROM posts GROUP BY area;
+
++---------+------------+
+| area    | SUM(likes) |
++---------+------------+
+| Fukuoka |         39 |
+| Osaka   |         22 |
+| Tokyo   |         35 |
++---------+------------+
+```
+
+SUMの結果から30より大きなものだけを抽出したかったとします。その場合ですが、長くなるので改行を入れながら書いてあげると、この結果で likes の合計が 30 より大きいものを抽出したいので、 WHERE を使って、このように書きたいところですが、実はこれではうまくいきません。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+-- SELECT area, SUM(likes) FROM posts GROUP BY area;
+
+SELECT
+  area,
+  SUM(likes)
+FROM
+  posts
+GROUP BY
+  area
+WHERE
+  SUM(likes) > 30;
+
+ERROR 1064 (42000) at line 23: You have an error in your SQL syntax;
+ check the manual that corresponds to your MariaDB server version for
+ the right syntax to use near 'WHERE
+  SUM(likes) > 30' at line 8
+# エラーが表示される
+```
+
+これは、 WHERE が GROUP BY より前に処理されるので、後ろに書いてはいけないというルールがあるからです。もし GROUP BY した結果に条件を付けたかったら WHERE ではなく、 HAVING という命令を使ってあげる必要があります。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+-- SELECT area, SUM(likes) FROM posts GROUP BY area;
+
+SELECT
+  area,
+  SUM(likes)
+FROM
+  posts
+GROUP BY
+  area
+-- WHERE
+HAVING # GROUP BYした結果に条件をつけたい場合は、WHEREではなく、HAVINGで命令すること
+  SUM(likes) > 30;
+
++---------+------------+
+| area    | SUM(likes) |
++---------+------------+
+| Fukuoka |         39 |
+| Tokyo   |         35 |
++---------+------------+
+# GROUP BYを使った時はこの点に注意しておくこと
+```
+
+WHEREと組み合わせて使った例を見てみましょう。GROUP BY より前に書く必要があるので、たとえばということで、こちらで WHERE likes が 10 より大きいもの、と書いてあげましょう。その場合ですが、① posts の全てのレコードから likes が 10 より大きいものだけを抽出したあとに ②GROUP BY してくれます。今回だと likes が 10 より大きいものなので、 Tokyo の 12 、 Tokyo の 11 、 Fukuoka の 31 がグループ化して集計されるはずです。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+-- SELECT area, SUM(likes) FROM posts GROUP BY area;
+
+-- SELECT
+--   area,
+--   SUM(likes)
+-- FROM
+--   posts
+-- GROUP BY
+--   area
+-- -- WHERE
+-- HAVING
+--   SUM(likes) > 30;
+
+SELECT
+  area,
+  SUM(likes)
+FROM
+  posts
+WHERE
+  likes > 10
+GROUP BY
+  area;
+# ① posts の全てのレコードから likes が 10 より大きいものだけを抽出したあとに ②GROUP BY してくれる
+
++---------+------------+
+| area    | SUM(likes) |
++---------+------------+
+| Fukuoka |         31 |
+| Tokyo   |         23 |
++---------+------------+
+```
+
+こうした挙動も理解しておきましょう。
+### 質問：WHERE句にSUMを入れるとエラーになりました。
+回答：WHERE句にSUMなどの集約関数を指定することはできません。
+
+WHERE句にSUMなどの集約関数は指定できません。集約した値を条件として指定したい場合にはHAVINGを使ってください。
+### 要点まとめ
+GROPU BYした結果に抽出条件を設定できるHAVINGについて見ていきます。
+
+- HAVING：GROUP BYで出した結果に抽出条件を設定する場合に使う
+- WHEREを使う場合の注意点：WHEREはGROUP BYより先に処理されるので、GROUP BYより後ろに書いてはいけないというルールがある</details>
+
+
 <details><summary>
