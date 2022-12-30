@@ -1354,4 +1354,135 @@ WHERE
 
 <details><summary>#11 抽出元にサブクエリを使ってみよう</summary>
 
+areaごとの投稿数を出してみましょう。
+
+COUNTと使い、nという別名を付けて、GROUP BYでareaごと指定してあげます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT area, COUNT(*) AS n FROM posts GROUP BY area;
+
++---------+---+
+| area    | n |
++---------+---+
+| Fukuoka | 2 |
+| Osaka   | 3 |
+| Tokyo   | 4 |
++---------+---+
+```
+
+では、ここでこの抽出結果である2,3,4の平均を出したかった場合を考えましょう。
+
+その場合、この結果を別テーブルに切り出して集計する方法もありますが、サブクエリを使う方法もあります。
+
+どうするかというと、この結果をtというテーブルだと考えて、nの平均を出せばいいので、そのように先ずはクエリを組み立ててあげましょう。
+
+nの平均をt(というテーブル)から抽出する、と書きます。
+
+また、ここでtは上にある`SELECT area, COUNT(*) AS n FROM posts GROUP BY area;`と書いたクエリの結果なので、そのままサブクエリとして置き換えてあげます。
+
+但し、サブクエリを抽出元のテーブルとして使った場合、必ず別名を付ける必要があるので、AS tとしてあげてください。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT area, COUNT(*) AS n FROM posts GROUP BY area;
+
+SELECT
+  AVG(n)
+FROM
+  (SELECT area, COUNT(*) AS n FROM posts GROUP BY area) AS t; /* クエリを組み立ててその中にサブクエリ作成→
+サブクエリを抽出元のテーブルとして使った場合、必ず別名を付ける必要があるので、AS tと付ける */
+
++---------+---+
+| area    | n |
++---------+---+
+| Fukuoka | 2 |
+| Osaka   | 3 |
+| Tokyo   | 4 |
++---------+---+
++--------+
+| AVG(n) |
++--------+
+| 3.0000 |
++--------+
+```
+
+### 質問：SQL文のカンマはどのように作用しているのですか？
+回答：
+
+まず、SQL 文を見てみましょう。
+
+```sql
+SELECT area, COUNT(*) AS n FROM posts GROUP BY area;
+
+```
+
+こちらですね、このままではわかりにくいので、仮に「｜」をいれてどこまでが部分を形成しているのか見てみましょう。（構文的には｜はないと思ってください）
+
+```sql
+｜SELECT  area, COUNT(*) AS n   ｜   FROM posts  ｜ GROUP BY area｜
+
+```
+
+こんな感じになります。つまり、`SELECT`、`FROM`、`GROUP`などの SQL の構文が区切りになっている、ということなのですね。
+
+なのでご質問の `,` は `FROM` の手前まで有効、となります。
+
+次に `GROUP BY` に複数のカラムを入れる方法を紹介しますね。
+
+これはずばり、ご察しのとおり `,` を入れるのです。例を見てみましょう。
+
+```sql
+SELECT area,likes, COUNT(*) AS n FROM posts GROUP BY area,likes;
+
+```
+
+こんな感じになります。`GROUP BY area,likes` と `,` で追加されているのがわかりますね。これで`area,likes` が全く同じものを 1 種類とみなしてまとめて、ここでは数を `COUNT` で数えてくれます。
+
+また、`SELECT area,likes,` のように表示するカラムも増やしていることにも注目してください。
+
+さて、ここで宿題です。実は今の状態で上の行を単純に MySQL に入力しても `area` 、`likes` が全く同じレコードがないので試すことができないのです。
+
+なので、`main.sql` をちょっと変更して `area` 、`likes` が一緒であるレコードを追加または変更作成して、上の複数 `GROUP BY` の結果、`area` 、`likes` が一緒であるレコードの数が 2 以上になるようにしてみてください。
+
+ご理解のため、ぜひ挑戦してみてください。もしわからなかったらお気軽にお問い合わせください！</details>
+
 
