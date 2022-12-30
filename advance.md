@@ -707,4 +707,161 @@ SELECT * FROM posts_skeleton;
 - CREATE TABLE ... LIKE ...：データの構造だけコピーして中身のレコードはいらないよ、という場合は`LIKE テーブル名`とする</details>
 
 
-<details><summary>
+<details><summary>#06 VIEWを扱ってみよう</summary>
+
+コードのほうは posts_tokyo だけにしておきました。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+DROP TABLE IF EXISTS posts_tokyo;
+CREATE TABLE posts_tokyo AS SELECT * FROM posts WHERE area = 'Tokyo';
+```
+
+この posts_tokyo ですが、 posts テーブルから一部のデータを抽出した別のテーブルなので、当然ですがこちらを更新しても posts_tokyo が自動的に更新されるという訳ではありません。
+
+posts テーブルを更新していきます。id が 1 のレコードの likes を 15 にしてあげましょう。そのうえで posts テーブルと、 posts_tokyo テーブルの中身を確認してみます。posts のほうは更新されますが、 posts_tokyo のほうは更新されないはずです。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+DROP TABLE IF EXISTS posts_tokyo;
+CREATE TABLE posts_tokyo AS SELECT * FROM posts WHERE area = 'Tokyo';
+
+UPDATE posts SET likes = 15 WHERE id = 1; # idが1のレコードのlikesの数を15にする
+
+SELECT * FROM posts;
+SELECT * FROM posts_tokyo;
+
++----+---------+-------+---------+
+| id | message | likes | area    |
++----+---------+-------+---------+
+|  1 | post-1  |    15 | Tokyo   |
+|  2 | post-2  |     8 | Fukuoka |
+|  3 | post-3  |    11 | Tokyo   |
+|  4 | post-4  |     3 | Osaka   |
+|  5 | post-5  |     8 | Tokyo   |
+|  6 | post-6  |     9 | Osaka   |
+|  7 | post-7  |     4 | Tokyo   |
+|  8 | post-8  |    10 | Osaka   |
+|  9 | post-9  |    31 | Fukuoka |
++----+---------+-------+---------+
+# postsテーブルは15に更新されている
++----+---------+-------+-------+
+| id | message | likes | area  |
++----+---------+-------+-------+
+|  1 | post-1  |    12 | Tokyo |
+|  3 | post-3  |    11 | Tokyo |
+|  5 | post-5  |     8 | Tokyo |
+|  7 | post-7  |     4 | Tokyo |
++----+---------+-------+-------+
+# posts_tokyoは12のまま
+```
+
+VIEW という仕組みを使えば元テーブルと連動する仮想的なテーブルを作ることができます。どうするかというと、 CREATE VIEW としてあげます。名前も分かりやすく posts_tokyo_view にしてあげましょう。この VIEW ですが、こちらの抽出条件だけを保持した仮想的なテーブルで実行する度に、元データから再度値を抽出してくれるという仕組みになっています。
+
+```sql
+DROP TABLE IF EXISTS posts_tokyo;
+CREATE TABLE posts_tokyo AS SELECT * FROM posts WHERE area = 'Tokyo';
+
+CREATE VIEW posts_tokyo_view AS SELECT * FROM posts WHERE area = 'Tokyo';
+
+UPDATE posts SET likes = 15 WHERE id = 1;
+
+SELECT * FROM posts;
+SELECT * FROM posts_tokyo;
+```
+
+それから既にこの VIEW があるとエラーになってしまうので、こちらで削除しておきましょう。posts_tokyo のほうはコメントにしてあげて、 posts_tokyo_view の中身を最後に確認してあげます。
+
+```sql
+-- DROP TABLE IF EXISTS posts_tokyo;
+-- CREATE TABLE posts_tokyo AS SELECT * FROM posts WHERE area = 'Tokyo';
+
+DROP VIEW IF EXISTS posts_tokyo_view;
+CREATE VIEW posts_tokyo_view AS SELECT * FROM posts WHERE area = 'Tokyo';
+
+UPDATE posts SET likes = 15 WHERE id = 1;
+
+SELECT * FROM posts;
+-- SELECT * FROM posts_tokyo;
+SELECT * FROM posts_tokyo_view;
+
++----+---------+-------+---------+
+| id | message | likes | area    |
++----+---------+-------+---------+
+|  1 | post-1  |    15 | Tokyo   |
+|  2 | post-2  |     8 | Fukuoka |
+|  3 | post-3  |    11 | Tokyo   |
+|  4 | post-4  |     3 | Osaka   |
+|  5 | post-5  |     8 | Tokyo   |
+|  6 | post-6  |     9 | Osaka   |
+|  7 | post-7  |     4 | Tokyo   |
+|  8 | post-8  |    10 | Osaka   |
+|  9 | post-9  |    31 | Fukuoka |
++----+---------+-------+---------+
+# postsが15
++----+---------+-------+-------+
+| id | message | likes | area  |
++----+---------+-------+-------+
+|  1 | post-1  |    15 | Tokyo |
+|  3 | post-3  |    11 | Tokyo |
+|  5 | post-5  |     8 | Tokyo |
+|  7 | post-7  |     4 | Tokyo |
++----+---------+-------+-------+
+# VIEWは実行する度に、データを抽出するので、こちらも15になっている
+```
+
+こうしたVIEWも使いこなせるようになっておきましょう。
+### 質問：VIEWテーブルの値はいつ更新されているのですか？
+回答：VIEWを取得する度に最新の情報が抽出されます。
+
+`VIEW`は抽出条件を保存した仮想的なテーブルです。
+
+値そのものを保持しているわけではなく、元のテーブルから抽出する条件を保存しているものと考えてください。
+
+ですので、元テーブルが`UPDATE`されたタイミングで`VIEW`で参照するものも更新されています。
+### 要点まとめ
+抽出結果だけを保持することのできるVIEWについて見ていきます。
+
+- VIEW：元テーブルと連動する仮想的なテーブルを作ることができる
+- DROP VIEW：作成済みのビューを削除する</details>
+
+
+<details><summary>#07 UNIONで抽出結果をまとめよう
