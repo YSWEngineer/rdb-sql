@@ -1138,3 +1138,169 @@ INSERT INTO posts(message, likes, area) VALUES
 
 <details><summary>#09 相関サブクエリを使ってみよう</summary>
 
+今実行してあげると、横に平均が表示されている状態です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT
+  *,
+  (SELECT AVG(likes) FROM posts) AS avg
+FROM
+  posts;
+
++----+---------+-------+---------+---------+
+| id | message | likes | area    | avg     |
++----+---------+-------+---------+---------+
+|  1 | post-1  |    12 | Tokyo   | 10.6667 |
+|  2 | post-2  |     8 | Fukuoka | 10.6667 |
+|  3 | post-3  |    11 | Tokyo   | 10.6667 |
+|  4 | post-4  |     3 | Osaka   | 10.6667 |
+|  5 | post-5  |     8 | Tokyo   | 10.6667 |
+|  6 | post-6  |     9 | Osaka   | 10.6667 |
+|  7 | post-7  |     4 | Tokyo   | 10.6667 |
+|  8 | post-8  |    10 | Osaka   | 10.6667 |
+|  9 | post-9  |    31 | Fukuoka | 10.6667 |
++----+---------+-------+---------+---------+
+```
+
+こちら表の横に area ごとの平均も表示したかった場合、どうするか考えてみましょう。
+
+その場合ですが、最初のレコードを処理しているときには、全体から area が Tokyo のレコードだけを抜き出して、平均を計算してあげれば良さそうです。そして、次のレコードを処理するときには全体から area が Fukuoka のレコードだけ抜き出してあげて、平均を計算してあげればいいですね。そのようにクエリを書いていきましょう。
+
+こちらにもうひとつサブクエリを書いてあげて、 area_avg としてあげましょう。そのうえで WHERE 条件で全体の area と、今処理しているレコードの area が一緒のものを抽出してあげればいいですね。
+
+```sql
+SELECT
+  *,
+  (SELECT AVG(likes) FROM posts) AS avg,
+  (SELECT AVG(likes) FROM posts WHERE area = area) AS area_avg
+FROM
+```
+
+ただこれだと、どっちがどっちかがわからないので、抽出元のテーブルに別名をつけてあげましょう。こちらは t1 、そして今処理しているほうを t2 としてあげましょう。
+
+```sql
+SELECT
+  *,
+  (SELECT AVG(likes) FROM posts) AS avg,
+  (SELECT AVG(likes) FROM posts AS t2 WHERE area = area) AS area_avg
+FROM
+  posts AS t1;
+```
+
+そのうえで、こちらの area は t1 の area にしてあげたいので、 テーブル名.カラム名 としてあげます。
+
+こちらは t2 の area にしたいので、このように書いてあげれば OK ですね。
+
+```sql
+SELECT
+  *,
+  (SELECT AVG(likes) FROM posts) AS avg,
+  (SELECT AVG(likes) FROM posts AS t2 WHERE t1.area = t2area) AS area_avg
+FROM
+  posts AS t1;
+
++----+---------+-------+---------+---------+----------+
+| id | message | likes | area    | avg     | area_avg |
++----+---------+-------+---------+---------+----------+
+|  1 | post-1  |    12 | Tokyo   | 10.6667 |   8.7500 |
+|  2 | post-2  |     8 | Fukuoka | 10.6667 |  19.5000 |
+|  3 | post-3  |    11 | Tokyo   | 10.6667 |   8.7500 |
+|  4 | post-4  |     3 | Osaka   | 10.6667 |   7.3333 |
+|  5 | post-5  |     8 | Tokyo   | 10.6667 |   8.7500 |
+|  6 | post-6  |     9 | Osaka   | 10.6667 |   7.3333 |
+|  7 | post-7  |     4 | Tokyo   | 10.6667 |   8.7500 |
+|  8 | post-8  |    10 | Osaka   | 10.6667 |   7.3333 |
+|  9 | post-9  |    31 | Fukuoka | 10.6667 |  19.5000 |
++----+---------+-------+---------+---------+----------+
+```
+
+このように大本のクエリと関連付けながら、実行しているサブクエリのことを相関サブクエリと呼ぶので、用語として覚えておくといいでしょう。
+### 質問：サブクエリを使ったコードの仕組みがわからない
+`SELECT`
+
+`*,`
+
+`(SELECT AVG(likes) FROM posts) AS avg,`
+
+`(SELECT AVG(likes) FROM posts AS t2 WHERE t1.area=t2.area) AS area_avg`
+
+`FROM`
+
+`posts AS t1;`
+
+レッスンで表示されているこのコードの意味が全くわかりませんでした。
+
+area_avgカラムの部分です。
+
+詳しく仕組みを教えていただきたいです。
+
+回答：順序を追って説明していきます。
+
+相関サブクエリはちょっと難しいですよね具体的に値を入れてみると理解の助けになるかもしれません
+
+例えばt1テーブルのid=1の行を考えてみます。つまり`t1.area = 'Tokyo'`が入っていると考えるするとt2.area = 'Tokyo'となる行は以下の4行です
+
+```
+| id | message | likes | area    |
++----+---------+-------+---------+
+|  1 | post-1  |    12 | Tokyo   |
+|  3 | post-3  |    11 | Tokyo   |
+|  5 | post-5  |     8 | Tokyo   |
+|  7 | post-7  |     4 | Tokyo   |
++----+---------+-------+---------+
+
+```
+
+これらの`likes`の平均が`(12 + 11 + 8 + 4 )/4 = 8.75`となっています。同様にid=2の行を取り出して（`t1.area = 'Fukuoka'`とする）`t2.area = 'Fukuoka'`となる行の平均が得られる。`id = 3 ~ 9`の行も同様に考えていきます。
+
+このような形で、1行につき全ての行を付き合わせて、areaが同じものを抽出し平均を出すというのがこのクエリです。
+
+```sql
+(SELECT AVG(likes) FROM posts AS t2 WHERE t1.area = t2.area) AS area_avg
+
+```
+
+`as` でその取り出したカラムにarea_avgという別名をつけているという形ですね。
+### 質問：2つのテーブルはどう区別すべきですか？
+回答：最初はご自身のわかりやすい考え方で理解しておくといいでしょう。
+
+最初はご自身のわかりやすい考え方で理解しておくのがよいとは思います。
+
+参考までに MySQL がどのようにクエリを処理をしているかのイメージですが、
+
+- まず posts テーブルから全件取得しよう。
+- 取得した id=1 のレコードの area の値は Tokyo である。posts テーブルから `area = 'Tokyo'` のレコードを取得して likes の平均を求めよう。
+- 取得した id=2 のレコードの area の値は Fukuoka である。posts テーブルから `area = 'Fukuoka'` のレコードを取得して likes の平均を求めよう。
+- ... (以下省略)
+
+のような感じです。
+
+posts テーブルのデータは変更されないので、特にコピーしておかなくても SELECT でレコードを取得できます。
+### 要点まとめ
+クエリを関連付けながら実行できる相関サブクエリについて見ていきます。
+
+- 相関サブクエリ：大元のクエリと関連づけながら、実行しているサブクエリのこと</details>
+
+
+<details><summary>#10 抽出条件にサブクエリを使ってみよう</summary>
+
