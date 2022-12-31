@@ -2152,3 +2152,111 @@ mysql -h db -t -u dbuser -pdbpass myapp
 
 <details><summary>#18 トランザクションを使ってみよう</summary>
 
+#17の例を実装しましょう。
+
+post-1 に付けた最後のいいねが間違いだったとします。それを修正するには id が 1 のレコードに関しては、いいねを 1 減らす、そして id が 2 のレコードについては、いいねを 1 増やすと書いてあげれば OK です。ただ、この途中で邪魔が入って欲しくない場合、トランザクションを使えばいいです。
+
+`START TRANSACTION` としてあげて、処理の終わりで `COMMIT` としてあげれば OK です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('post-1', 12),
+  ('post-2', 8),
+  ('post-3', 11),
+  ('post-4', 3),
+  ('post-5', 5),
+  ('post-6', 9),
+  ('post-7', 4),
+  ('post-8', 10),
+  ('post-9', 31);
+
+START TRANSACTION;
+UPDATE posts SET likes = likes - 1 WHERE id = 1;
+UPDATE posts SET likes = likes + 1 WHERE id = 2;
+COMMIT;
+
+SELECT * FROM posts;
+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | post-1  |    11 |
+|  2 | post-2  |     9 |
+|  3 | post-3  |    11 |
+|  4 | post-4  |     3 |
+|  5 | post-5  |     5 |
+|  6 | post-6  |     9 |
+|  7 | post-7  |     4 |
+|  8 | post-8  |    10 |
+|  9 | post-9  |    31 |
++----+---------+-------+
+```
+
+途中でなんらかの障害が起きた場合も考えてみましょう。
+
+例えば`UPDATE posts SET likes = likes + 1 WHERE id = 2;` の処理がうまくいかなかったとします。
+
+その場合ですが、 COMMIT ではなくて `ROLLBACK` としてあげれば、こちらの処理はなかったことにできるはずです。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes) VALUES
+  ('post-1', 12),
+  ('post-2', 8),
+  ('post-3', 11),
+  ('post-4', 3),
+  ('post-5', 5),
+  ('post-6', 9),
+  ('post-7', 4),
+  ('post-8', 10),
+  ('post-9', 31);
+
+START TRANSACTION;
+UPDATE posts SET likes = likes - 1 WHERE id = 1;
+-- UPDATE posts SET likes = likes + 1 WHERE id = 2;
+-- COMMIT;
+ROLLBACK;
+
+SELECT * FROM posts;
+
++----+---------+-------+
+| id | message | likes |
++----+---------+-------+
+|  1 | post-1  |    12 |
+|  2 | post-2  |     8 |
+|  3 | post-3  |    11 |
+|  4 | post-4  |     3 |
+|  5 | post-5  |     5 |
+|  6 | post-6  |     9 |
+|  7 | post-7  |     4 |
+|  8 | post-8  |    10 |
+|  9 | post-9  |    31 |
++----+---------+-------+
+```
+
+id が 1 のレコードについて UPDATE をかけたのにも関わらず、 12 のままなのが分かります。
+### 要点まとめ
+トランザクションの挙動をコードで確認していきます。
+
+- START TRANSACTION：トランザクション開始の指示。この指示以降のSQL文を1つのトランザクションとする。
+- COMMIT：トランザクション終了の指示。この指示までを1つのトランザクションとし、変更を確定する。
+- ROLLBACK：トランザクション終了の指示。この指示までを1つのトランザクションとし、変更の取り消しを行う。</details>
+
+
+<details><summary>#19 テーブルを分割してみよう</summary>
+
