@@ -1687,3 +1687,158 @@ WINDOW
 
 <details><summary>#14 FRAMEを設定してみよう</summary>
 
+今はテーブルの横にareaごとの合計が出ている状態です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT
+  *,
+  SUM(likes) OVER (PARTITION BY area) AS area_sum
+FROM
+  posts;
+
++----+---------+-------+---------+----------+
+| id | message | likes | area    | area_sum |
++----+---------+-------+---------+----------+
+|  9 | post-9  |    31 | Fukuoka |       39 |
+|  2 | post-2  |     8 | Fukuoka |       39 |
+|  4 | post-4  |     3 | Osaka   |       22 |
+|  6 | post-6  |     9 | Osaka   |       22 |
+|  8 | post-8  |    10 | Osaka   |       22 |
+|  7 | post-7  |     4 | Tokyo   |       35 |
+|  1 | post-1  |    12 | Tokyo   |       35 |
+|  3 | post-3  |    11 | Tokyo   |       35 |
+|  5 | post-5  |     8 | Tokyo   |       35 |
++----+---------+-------+---------+----------+
+```
+
+FRAMEを使って累計を集計してみましょう。
+
+likesの小さい順に並び替えた上で累計を集計していきたいので、`ORDER BY likes` としてあげます。
+
+その上でFRAMEを設定したいのですが、実はデフォルトでパーティションの先頭からそのレコードまでになるので、このままで累計が集計できるはずです。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT
+  *,
+  SUM(likes) OVER (
+    PARTITION BY area
+    ORDER BY likes -- ORDER BY 列名 :検索結果を並べ替える 今回は昇順
+  ) AS area_sum
+FROM
+  posts;
+
++----+---------+-------+---------+----------+
+| id | message | likes | area    | area_sum |
++----+---------+-------+---------+----------+
+|  2 | post-2  |     8 | Fukuoka |        8 |
+|  9 | post-9  |    31 | Fukuoka |       39 |
+|  4 | post-4  |     3 | Osaka   |        3 |
+|  6 | post-6  |     9 | Osaka   |       12 |
+|  8 | post-8  |    10 | Osaka   |       22 |
+|  7 | post-7  |     4 | Tokyo   |        4 |
+|  5 | post-5  |     8 | Tokyo   |       12 |
+|  3 | post-3  |    11 | Tokyo   |       23 |
+|  1 | post-1  |    12 | Tokyo   |       35 |
++----+---------+-------+---------+----------+
+-- パーティションごとにちゃんと累計が集計できているのがわかる
+```
+
+FRAMEの設定を変更したい場合も見てあげましょう。
+
+例えば、パーティションの中で前後1行をフレームにしたい場合は`ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING`としてあげればOKです。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT
+  *,
+  SUM(likes) OVER (
+    PARTITION BY area
+    ORDER BY likes
+    ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING
+  ) AS area_sum
+FROM
+  posts;
+
++----+---------+-------+---------+----------+
+| id | message | likes | area    | area_sum |
++----+---------+-------+---------+----------+
+|  2 | post-2  |     8 | Fukuoka |       39 |
+|  9 | post-9  |    31 | Fukuoka |       39 |
+|  4 | post-4  |     3 | Osaka   |       12 |
+|  6 | post-6  |     9 | Osaka   |       22 |
+|  8 | post-8  |    10 | Osaka   |       19 |
+|  7 | post-7  |     4 | Tokyo   |       12 |
+|  5 | post-5  |     8 | Tokyo   |       23 |
+|  3 | post-3  |    11 | Tokyo   |       31 |
+|  1 | post-1  |    12 | Tokyo   |       23 |
++----+---------+-------+---------+----------+
+```
+
+### 要点まとめ
+PARTITIONのなかで並び替えをした後に、FRAMEを設定する方法について見ていきます。
+
+- ORDER BY：検索結果を並べ替える デフォルトやASCは昇順、DESCは降順。
+- ROWS BETWEEN ... AND ...：パーティションの中で前後1行をフレームにしたい場合。</details>
+
+
+<details><summary>#15 RANK()、DENSE_RANK()を使ってみよう</summary>
+
