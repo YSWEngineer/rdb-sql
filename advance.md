@@ -1842,3 +1842,107 @@ PARTITIONのなかで並び替えをした後に、FRAMEを設定する方法に
 
 <details><summary>#15 RANK()、DENSE_RANK()を使ってみよう</summary>
 
+OVERを使った時だけ使える関数について、よく使うものを見ていきましょう。
+
+では、likesの小さい順に並び替えた後にその連番が欲しいといった場合を考えてみます。その場合、ROW_NUMBER()という関数が使えます。`ROW_NUMBER() OVER (ORDER BY likes)` と書きます。それから、今回パーティションは全体を対象にしているので、パーティションを省略して`ORDER BY`だけになっている点にも注意しましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+  
+SELECT
+  *,
+  ROW_NUMBER() OVER (ORDER BY likes) AS num
+FROM
+  posts;
+
++----+---------+-------+---------+-----+
+| id | message | likes | area    | num |
++----+---------+-------+---------+-----+
+|  4 | post-4  |     3 | Osaka   |   1 |
+|  7 | post-7  |     4 | Tokyo   |   2 |
+|  5 | post-5  |     8 | Tokyo   |   3 |
+|  2 | post-2  |     8 | Fukuoka |   4 |
+|  6 | post-6  |     9 | Osaka   |   5 |
+|  8 | post-8  |    10 | Osaka   |   6 |
+|  3 | post-3  |    11 | Tokyo   |   7 |
+|  1 | post-1  |    12 | Tokyo   |   8 |
+|  9 | post-9  |    31 | Fukuoka |   9 |
++----+---------+-------+---------+-----+
+```
+
+例えば連番ではなく、順位が知りたかった場合、likesの数には8が2つあるので、それを考慮して順位をつけたいなら、そのための関数があります。
+
+二つの方法があり、**RANK関数**を使うか、**DENSE_RANK関数**を使えばOKです。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+  
+SELECT
+  *,
+  ROW_NUMBER() OVER (ORDER BY likes) AS num,
+  RANK() OVER (ORDER BY likes) AS rank, -- 同じ順位の次の順位は飛ばされる
+  DENSE_RANK() OVER (ORDER BY likes) AS dense -- 同じ順位があっても次の順位は飛ばされない
+FROM
+  posts;
+
++----+---------+-------+---------+-----+------+-------+
+| id | message | likes | area    | num | rank | dense |
++----+---------+-------+---------+-----+------+-------+
+|  4 | post-4  |     3 | Osaka   |   1 |    1 |     1 |
+|  7 | post-7  |     4 | Tokyo   |   2 |    2 |     2 |
+|  5 | post-5  |     8 | Tokyo   |   3 |    3 |     3 |
+|  2 | post-2  |     8 | Fukuoka |   4 |    3 |     3 |
+|  6 | post-6  |     9 | Osaka   |   5 |    5 |     4 |
+|  8 | post-8  |    10 | Osaka   |   6 |    6 |     5 |
+|  3 | post-3  |    11 | Tokyo   |   7 |    7 |     6 |
+|  1 | post-1  |    12 | Tokyo   |   8 |    8 |     7 |
+|  9 | post-9  |    31 | Fukuoka |   9 |    9 |     8 |
++----+---------+-------+---------+-----+------+-------+
+```
+
+ウィンドウ関数でしか使えない関数もよく使われるので、覚えておきましょう。
+### 要点まとめ
+OVERを使った時に使える集計関数についてみていきます。
+
+- ROW_NUMBER()：ウィンドウ関数時に連番を付けることができる。
+- RANK()：同じ順位の次の順位は飛ばされる。
+- DENSE_RANK()：同じ順位があっても次の順位は飛ばされない。</details>
+
+
+<details><summary>#16 LAG()、LEAD()を扱ってみよう</summary>
