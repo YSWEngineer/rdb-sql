@@ -1518,3 +1518,172 @@ PARTITIONやFRAMEを設定して、高度な集計をすることができるウ
 
 <details><summary>#13 PARTITIONを設定してみよう</summary>
 
+早速ウィンドウ関数を使ってみましょう。
+
+コードを実行して表示されたテーブルの右側にlikesの全体の平均とareaごとの平均を出してみましょう。
+
+先ずは**全体の平均**から見ていきます。
+
+ウィンドウ関数では、今まで見てきた集計関数をそのまま使えるので、AVG(likes)としてあげて、ウィンドウ関数として使うならOVERと書いてあげます。また分かりやすくavgという別名を付けてあげます。
+
+そのうえでパーティションを設定するのですが、全体を一つのパーティションにするなら、単なる丸括弧でOKです。
+
+```sql
++----+---------+-------+---------+
+| id | message | likes | area    |
++----+---------+-------+---------+
+|  1 | post-1  |    12 | Tokyo   |
+|  2 | post-2  |     8 | Fukuoka |
+|  3 | post-3  |    11 | Tokyo   |
+|  4 | post-4  |     3 | Osaka   |
+|  5 | post-5  |     8 | Tokyo   |
+|  6 | post-6  |     9 | Osaka   |
+|  7 | post-7  |     4 | Tokyo   |
+|  8 | post-8  |    10 | Osaka   |
+|  9 | post-9  |    31 | Fukuoka |
++----+---------+-------+---------+
+
+-- ウィンドウ関数を使用
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT
+  *,
+  AVG(likes) OVER () AS avg -- 全体を一つのパーティションにするなら、単なる丸括弧でOK
+FROM
+  posts;
+
++----+---------+-------+---------+---------+
+| id | message | likes | area    | avg     |
++----+---------+-------+---------+---------+
+|  4 | post-4  |     3 | Osaka   | 10.6667 |
+|  7 | post-7  |     4 | Tokyo   | 10.6667 |
+|  5 | post-5  |     8 | Tokyo   | 10.6667 |
+|  2 | post-2  |     8 | Fukuoka | 10.6667 |
+|  6 | post-6  |     9 | Osaka   | 10.6667 |
+|  8 | post-8  |    10 | Osaka   | 10.6667 |
+|  3 | post-3  |    11 | Tokyo   | 10.6667 |
+|  1 | post-1  |    12 | Tokyo   | 10.6667 |
+|  9 | post-9  |    31 | Fukuoka | 10.6667 |
++----+---------+-------+---------+---------+
+-- 全体の平均が右側に表示されている
+```
+
+次に**areaごとの平均**を見ていきます。
+
+OVERの中でパーティションをしてしてあげればOKです。設定するには、`PARTITION BY area`とすればareaごとにパーティションを区切って平均を集計してくれます。別名はarea_avgにします。
+
+ついでにareaごとのlikesの合計も出してみましょう。
+
+AVGをSUMに変えてあげます。別名も分かりやすくarea_sumとします。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT
+  *,
+  AVG(likes) OVER () AS avg,
+  AVG(likes) OVER (PARTITION BY area) AS area_avg,
+  SUM(likes) OVER (PARTITION BY area) AS area_sum
+FROM
+  posts;
+
++----+---------+-------+---------+---------+----------+----------+
+| id | message | likes | area    | avg     | area_avg | area_sum |
++----+---------+-------+---------+---------+----------+----------+
+|  2 | post-2  |     8 | Fukuoka | 10.6667 |  19.5000 |       39 |
+|  9 | post-9  |    31 | Fukuoka | 10.6667 |  19.5000 |       39 |
+|  4 | post-4  |     3 | Osaka   | 10.6667 |   7.3333 |       22 |
+|  6 | post-6  |     9 | Osaka   | 10.6667 |   7.3333 |       22 |
+|  8 | post-8  |    10 | Osaka   | 10.6667 |   7.3333 |       22 |
+|  7 | post-7  |     4 | Tokyo   | 10.6667 |   8.7500 |       35 |
+|  3 | post-3  |    11 | Tokyo   | 10.6667 |   8.7500 |       35 |
+|  5 | post-5  |     8 | Tokyo   | 10.6667 |   8.7500 |       35 |
+|  1 | post-1  |    12 | Tokyo   | 10.6667 |   8.7500 |       35 |
++----+---------+-------+---------+---------+----------+----------+
+-- areaごとの平均、areaごとの合計がちゃんと追加されている
+```
+
+ウィンドウ関数を使うとサブクエリと違って、すっきり書くことができるので、使いこなせるようになっておきましょう。
+
+それからOVERから後ろの指定ですが、同じようなものがある場合は別名を付けることができます。その場合はWINDOWとしてあげて、`別名 AS PARTITION BY area` を書いてあげればOKです。そうすると、この指定の代わりにwという別名を使うことができるので、`PARTITION BY area`と書いた2行を短く書き換えることができます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+
+SELECT
+  *,
+  AVG(likes) OVER () AS avg,
+  -- AVG(likes) OVER (PARTITION BY area) AS area_avg,
+  -- SUM(likes) OVER (PARTITION BY area) AS area_sum
+  AVG(likes) OVER w AS area_avg,
+  SUM(likes) OVER w AS area_sum
+FROM
+  posts
+WINDOW
+  w AS (PARTITION BY area); -- (PARTITION BY area)をwという別名にする
+```
+
+こうした操作もできるようになっておいてください。
+### 要点まとめ
+ウィンドウ関数を使って、PARTITIONを設定する方法について見ていきます。
+
+- OVER()：ウィンドウ関数として使うために必要。
+- PARTITION BY：パーティションを設定。</details>
+
+
+<details><summary>#14 FRAMEを設定してみよう</summary>
+
