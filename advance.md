@@ -1946,3 +1946,119 @@ OVERを使った時に使える集計関数についてみていきます。
 
 
 <details><summary>#16 LAG()、LEAD()を扱ってみよう</summary>
+
+n個前、n個後のレコードの値を求めることができる関数について。
+
+1個前のレコードのlikesの値を求めたかったらLAG()を使って、`LAG(likes, 1) OVER (ORDER BY likes) AS lag,` と書けばOKです。今回はパーティションは全体にしてlikesの小さい順で並び替えた上で集計していきましょう。
+
+1個後のレコードのlikesの値は`LEAD()`とすればOKです。
+
+1の場合は省略できるので`LAG(likes) OVER (ORDER BY likes) AS lag,` `LEAD(likes) OVER (ORDER BY likes) AS lead,` このように書いても同じ意味になります。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+  
+SELECT
+  *,
+  -- LAG(likes, 1) OVER (ORDER BY likes) AS lag,
+  -- LEAD(likes, 1) OVER (ORDER BY likes) AS lead
+  LAG(likes) OVER (ORDER BY likes) AS lag,
+  LEAD(likes) OVER (ORDER BY likes) AS lead
+FROM
+  posts;
+
++----+---------+-------+---------+------+------+
+| id | message | likes | area    | lag  | lead |
++----+---------+-------+---------+------+------+
+|  4 | post-4  |     3 | Osaka   | NULL |    4 |
+|  7 | post-7  |     4 | Tokyo   |    3 |    8 |
+|  5 | post-5  |     8 | Tokyo   |    4 |    8 |
+|  2 | post-2  |     8 | Fukuoka |    8 |    9 |
+|  6 | post-6  |     9 | Osaka   |    8 |   10 |
+|  8 | post-8  |    10 | Osaka   |    9 |   11 |
+|  3 | post-3  |    11 | Tokyo   |   10 |   12 |
+|  1 | post-1  |    12 | Tokyo   |   11 |   31 |
+|  9 | post-9  |    31 | Fukuoka |   12 | NULL |
++----+---------+-------+---------+------+------+
+```
+
+また、これをうまく使うと、前のレコードからの差分なども表現することができます。
+
+likesから1つ前のlikesを引いてあげれば差分になります。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message, likes, area) VALUES
+  ('post-1', 12, 'Tokyo'),
+  ('post-2', 8, 'Fukuoka'),
+  ('post-3', 11, 'Tokyo'),
+  ('post-4', 3, 'Osaka'),
+  ('post-5', 8, 'Tokyo'),
+  ('post-6', 9, 'Osaka'),
+  ('post-7', 4, 'Tokyo'),
+  ('post-8', 10, 'Osaka'),
+  ('post-9', 31, 'Fukuoka');
+  
+SELECT
+  *,
+  -- LAG(likes, 1) OVER (ORDER BY likes) AS lag,
+  -- LEAD(likes, 1) OVER (ORDER BY likes) AS lead
+  -- LAG(likes) OVER (ORDER BY likes) AS lag,
+  -- LEAD(likes) OVER (ORDER BY likes) AS lead
+  likes - LAG(likes) OVER (ORDER BY likes) AS diff
+FROM
+  posts;
+
++----+---------+-------+---------+------+
+| id | message | likes | area    | diff |
++----+---------+-------+---------+------+
+|  4 | post-4  |     3 | Osaka   | NULL |
+|  7 | post-7  |     4 | Tokyo   |    1 |
+|  5 | post-5  |     8 | Tokyo   |    4 |
+|  2 | post-2  |     8 | Fukuoka |    0 |
+|  6 | post-6  |     9 | Osaka   |    1 |
+|  8 | post-8  |    10 | Osaka   |    1 |
+|  3 | post-3  |    11 | Tokyo   |    1 |
+|  1 | post-1  |    12 | Tokyo   |    1 |
+|  9 | post-9  |    31 | Fukuoka |   19 |
++----+---------+-------+---------+------+
+```
+
+次のレコードで前のレコードからどれだけ増えたかが分かります。
+
+LAG()やLEAD()関数も使えるようになっておきましょう。
+### 要点まとめ
+n個前、n個後の値を求めることができる関数を見ていきます。
+
+- LAG()：1個前のレコードの値を求める。
+- LEAD()：1個後のレコードの値を求める。</details>
+
+
+<details><summary>#17 トランザクションについて理解しよう</summary>
+
