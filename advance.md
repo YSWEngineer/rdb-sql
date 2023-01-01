@@ -2759,3 +2759,154 @@ FROM
 
 <details><summary>#24 外部キー制約を設定しよう</summary>
 
+さて、今まで見てきた comments のデータですが、 post-4 がないのに、それに対して comment が付けられるのは少しおかしいような気がします。
+
+こうした変なデータが入り込まないようにするための外部キー制約について見ていきましょう。
+
+では、comments テーブルの post_id に対して、 posts テーブルの id にその値が存在しなかったら弾いてくれるように設定しておきましょう。
+
+どうするかというと、 FOREIGN KEY としてあげて、 post_id に対して posts テーブルの id を参照して、そこに値がなければ弾いてねと、このように書いてあげます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+DROP TABLE IF EXISTS comments;
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1'),
+  (4, 'comment-4-1');
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+ERROR 1452 (23000) at line 22: Cannot add or update a child row: a foreign key 
+fails (`myapp`.`comments`, CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`))
+```
+
+外部キーの制約によって変なデータが追加できなくなっているのが分かります。
+
+今、外部キーが設定されましたが、そうするとここで紐付けたpostsテーブルのほうにも制限がかかるので注意しましょう。
+
+例えば、今一番上で posts テーブルを削除していますが、 posts テーブルは今 comments テーブルに紐づいているので、このまま削除すると comments テーブルのデータが宙ぶらりんになって整合性が取れなくなってしまいます。
+
+そのため、このまま実行するとエラーになります。
+
+これを直すにはここで posts テーブルを削除する前に外部キーの設定がされている comments テーブルを先に削除してあげれば OK です。
+
+今回はこちらの DROP TABLE 文を posts テーブルを削除する前に持ってきてあげましょう。
+
+変なデータはコメントにします。
+
+それからデータの中身も一応確認したいので、 SELECT * FROM posts 、 SELECT * FROM comments としておきましょう。
+
+これでエラーが出なくなるはずです。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1');
+  -- (4, 'comment-4-1');
+  
+SELECT * FROM posts;
+SELECT * FROM comments;
+
++----+---------+
+| id | message |
++----+---------+
+|  1 | post-1  |
+|  2 | post-2  |
+|  3 | post-3  |
++----+---------+
++----+---------+-------------+
+| id | post_id | comment     |
++----+---------+-------------+
+|  1 |       1 | comment-1-1 |
+|  2 |       1 | comment-1-2 |
+|  3 |       3 | comment-3-1 |
++----+---------+-------------+
+```
+
+### 質問：**posts テーブルの削除と comments テーブルの削除を逆にするとエラーになるのはなぜですか？**
+回答：**comments テーブルは posts テーブルを必要としているからです。**
+
+「comments テーブルは posts テーブルを必要としている」が、「posts テーブルはcomments テーブルを必要としていない」からなのです。
+
+具体的に申し上げますね。
+
+posts は「sns の投稿」のイメージでしたね。そして comments テーブルは「投稿に対するコメント」のイメージでした。
+
+投稿に対するコメントは「どの投稿に対するコメントか」が必要です。これが
+
+```lisp
+FOREIGN KEY (post_id) REFERENCES posts(id)
+
+```
+
+この部分です。`post_id` が「どの投稿に対するコメントか」を表します。
+
+さて、ここでもし先に posts テーブルを削除してしまったらどうなるでしょう？
+
+comments テーブルは残るのですが、上の
+
+```lisp
+FOREIGN KEY (post_id) REFERENCES posts(id)
+
+```
+
+の部分が意味を持たなくなるのがわかりますでしょうか。posts テーブル、つまり「sns の投稿」がないのに「ない投稿に対するコメント」だけがあるというおかしな状態になります。
+
+なので MySQL はエラーとなるわけなのです。
+
+逆だとどうでしょう？
+
+comments、つまり「投稿に対するコメント」だけが削除されて posts、つまり「sns の投稿」だけがある状態です。これは「sns の投稿」は「投稿に対するコメント」がなくても特にデータ的には問題ありませんね。そして MySQL もエラーにはなりません。
+
+なのでテーブルを削除する際は、「posts テーブルは comments テーブルを必要としていない」ので、まず不要な comments から削除する必要がある、というわけなのですね。
+### 要点まとめ
+データの整合性を取るために、外部キー制約について見ていきます。
+
+- 外部キー制約の設定：**外部キー**は、他のテーブルの関連行を指すための値を格納することでリレーションシップを結ぶ役割を担っている列のこと。**外部キー制約**は、参照整合性が崩れるようなデータ操作をしようとした場合にエラーを発生させ、強制的に処理を中断させる制約のこと。</details>
+
+
+<details><summary>#25 データの整合性を保とう</summary>
+
