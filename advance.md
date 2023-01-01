@@ -2910,3 +2910,175 @@ comments、つまり「投稿に対するコメント」だけが削除されて
 
 <details><summary>#25 データの整合性を保とう</summary>
 
+外部キーが設定された状態で posts テーブルのほうに変更を加えたかった場合を見てみます。
+
+こちらで post-3 を削除してみましょう。
+
+id が 3 のレコードを削除すればいいので、 `DELETE FROM posts WHERE id = 3` としてあげればいいでしょう。
+
+ただ、この場合 post-3 に紐づく comment が存在しているので、データ整合性を保持するために、このままではうまくいかないはずです。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1');
+
+DELETE FROM posts WHERE id = 3;
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+ERROR 1451 (23000) at line 28: Cannot delete or update a parent 
+row: a foreign key constraint fails (`myapp`.`comments`, CONSTRAINT `comments_ibfk_1` 
+FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`))
+```
+
+では、ここでデータの整合性を取るために、 posts のほうでレコードが削除されたら、合わせて comments のほうでも紐づくレコードが削除されるように設定してみましょう。
+
+どうするかというと、こちらで `ON DELETE CASCADE` としてあげます。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1');
+
+DELETE FROM posts WHERE id = 3;
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
++----+---------+
+| id | message |
++----+---------+
+|  1 | post-1  |
+|  2 | post-2  |
++----+---------+
++----+---------+-------------+
+| id | post_id | comment     |
++----+---------+-------------+
+|  1 |       1 | comment-1-1 |
+|  2 |       1 | comment-1-2 |
++----+---------+-------------+
+```
+
+post-3 が削除されていて、 comment からも関連するレコードが消えているのが分かります。
+
+それから DELETE だけではなくて、 UPDATE に関しても設定することができます。
+
+`ON UPDATE CASCADE` としてみましょう。
+
+こうしておくと、 posts のデータが更新されると、こちらの紐づくデータも更新されるようになります。
+
+今回紐づいているのは id なので、 id を更新してみましょう。
+
+id が 1 ではなくて、 100 だったとしてみます。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1');
+
+DELETE FROM posts WHERE id = 3;
+UPDATE posts SET id = 100 WHERE id = 1;
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
++-----+---------+
+| id  | message |
++-----+---------+
+|   2 | post-2  |
+| 100 | post-1  |
++-----+---------+
++----+---------+-------------+
+| id | post_id | comment     |
++----+---------+-------------+
+|  1 |     100 | comment-1-1 |
+|  2 |     100 | comment-1-2 |
++----+---------+-------------+
+```
+
+id が 100 になって、それに関連するデータも 100 で更新されているのが分かります。
+
+外部キー制約を使うと、このようにデータの整合性が取れるようになるので、慣れておきましょう。
+### 要点まとめ
+外部キーの設定と合わせて、データの整合性を取るための方法を見ていきます。
+
+- ON DELETE CASCADE：紐付くレコードを削除する。
+- ON UPDATE CASCADE：紐付くレコードを更新する。</details>
+
+
+<details><summary>#26 LAST_INSERT_ID()を使ってみよう</summary>
