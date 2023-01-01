@@ -2520,3 +2520,117 @@ commentsテーブル
 
 
 <details><summary>#22 内部結合を使ってみよう</summary>
+
+内部結合を見てみます。
+
+posts と comments を内部結合したい場合は、 `posts INNER JOIN comments` としてあげて、紐づけるカラムを ON で表現してあげます。
+
+今回だと posts の id と comments の post_id を紐付けてあげればいいです。
+
+実はINNERを省略しても内部結合になるので、単にJOINと書いても上と同じ意味になります。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+DROP TABLE IF EXISTS comments;
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1'),
+  (4, 'comment-4-1');
+
+SELECT
+  *
+FROM
+  -- posts INNER JOIN comments ON posts.id = comments.post_id; -- 内部結合
+  posts JOIN comments ON posts.id = comments.post_id; /* postsテーブルとcommentsテーブルを内部結合し、
+postsテーブルのidとcommentsテーブルのpost_idを紐付けせよ */
+-- どちらも同じ意味
+
++----+---------+----+---------+-------------+
+| id | message | id | post_id | comment     |
++----+---------+----+---------+-------------+
+|  1 | post-1  |  1 |       1 | comment-1-1 |
+|  1 | post-1  |  2 |       1 | comment-1-2 |
+|  3 | post-3  |  3 |       3 | comment-3-1 |
++----+---------+----+---------+-------------+
+```
+
+また、特定のカラムだけを抽出したい場合は、テーブル名を付けてあげて、抽出すれば OK です。
+
+posts の id と posts の message と comments の comment だけ抽出したい場合は、このように書いてあげれば OK です。
+
+但し id は両方にあるのでテーブル名を付ける必要がありますが、 **message や comment はそれぞれのテーブルにしかないので、省略してあげることもできます**。
+
+したがってこちらは、 [posts.id](http://posts.id/) と message と comment だけでも OK です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+DROP TABLE IF EXISTS comments;
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1'),
+  (4, 'comment-4-1');
+
+SELECT
+  -- *
+  -- posts.id, posts.message, comments.comment
+  posts.id, message, comment -- messageとcommentはそれぞれのテーブルにしかないので省略が可能
+FROM
+  -- posts INNER JOIN comments ON posts.id = comments.post_id;
+  posts JOIN comments ON posts.id = comments.post_id;
+
++----+---------+-------------+
+| id | message | comment     |
++----+---------+-------------+
+|  1 | post-1  | comment-1-1 |
+|  1 | post-1  | comment-1-2 |
+|  3 | post-3  | comment-3-1 |
++----+---------+-------------+
+```
+
+こうした内部結合もできるようになっておきましょう。
+### 要点まとめ
+コメントがついている投稿だけを抜き出す方法について見ていきます。
+
+- INNER JOIN：INNERを省略することも可能。</details>
+
+
+<details><summary>#23 外部結合を使ってみよう</summary>
+
