@@ -3202,3 +3202,190 @@ LAST_INSERT_IDも便利なので、慣れておいてください。
 
 <details><summary>#27 コメントにコメントをつけよう</summary>
 
+今の投稿とコメントがどのような状態か、をコメントでまとめて見ましょう。
+
+3 つ投稿があって、 post-1 と post-3 に comment がついている状態です。
+
+post-1 には 2 つ comment がついていて、 post-3 には 1 つ comment がついてる状態です。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1');
+  
+/*
+post-1
+  comment-1-1
+  comment-1-2
+post-2
+post-3
+  comment-3-1
+*/
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+```
+
+ではここで comment に対して comment が付けられるようにしたかったとしましょう。
+
+たとえば comment-1-2 に対してさらに 2 つ comment が付いたとします。
+
+さらにcomment-1-2-1にもう 1 つ comment が付いたとしましょう。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1');
+  
+/*
+post-1
+  comment-1-1
+  comment-1-2
+    comment-1-2-1
+      comment-1-2-1-1
+    comment-1-2-2
+post-2
+post-3
+  comment-3-1
+*/
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+```
+
+その場合、どうデータを管理していくかですが、 comment がどの親を comment に持つかを保持しておけば良さそうです。
+
+`parent_id`というカラムを用意します。
+
+その上でまず、この 3 つの comment ですが、親となる comment がないのでこちらに関しては NULL としておきましょう。
+
+ comment-1-2 に対して 2 つ comment を付けたので、こちらでレコードを挿入してあげます。
+
+post は 1 に関するものでよくて、 comment はちょっと更新してあげて、そして parent_id ですが、 2 番目の comment なので、こちらは 2 にしてあげればいいでしょう。
+
+さらに comment-1-2-1 に対してもうひとつ comment を付けたので、レコードを挿入してあげましょう。
+
+post_id は 1 でよくて、こちらは更新してあげて、そして parent_id ですが、 4 番目の comment についているので、こちらを 4 にしてあげれば良いでしょう。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  parent_id INT,
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment, parent_id) VALUES
+  (1, 'comment-1-1', NULL),
+  (1, 'comment-1-2', NULL),
+  (3, 'comment-3-1', NULL),
+  (1, 'comment-1-2-1', 2),
+  (1, 'comment-1-2-2', 2),
+  (1, 'comment-1-2-1-1', 4);
+  
+/*
+post-1
+  comment-1-1
+  comment-1-2
+    comment-1-2-1
+      comment-1-2-1-1
+    comment-1-2-2
+post-2
+post-3
+  comment-3-1
+*/
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
++----+---------+
+| id | message |
++----+---------+
+|  1 | post-1  |
+|  2 | post-2  |
+|  3 | post-3  |
++----+---------+
++----+---------+-----------------+-----------+
+| id | post_id | comment         | parent_id |
++----+---------+-----------------+-----------+
+|  1 |       1 | comment-1-1     |      NULL |
+|  2 |       1 | comment-1-2     |      NULL |
+|  3 |       3 | comment-3-1     |      NULL |
+|  4 |       1 | comment-1-2-1   |         2 |
+|  5 |       1 | comment-1-2-2   |         2 |
+|  6 |       1 | comment-1-2-1-1 |         4 |
++----+---------+-----------------+-----------+
+```
+
+</details>
+
+
+<details><summary>#28 コメントのコメントを抽出してみよう</summary>
