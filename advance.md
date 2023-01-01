@@ -2414,3 +2414,109 @@ SELECT * FROM comments;
 
 
 <details><summary>#21 内部結合、外部結合について見ていこう</summary>
+
+postsとcommentsの2つのテーブルがあり、post-1にはcommentが2件、post-2にはcommentなし、post-3にはcommentが1件、そしてpostsに紐づいていないcommentが1件ある状態です。
+
+ここで、2つのテーブルを結合させて、データを抽出していきたいのですが、大きく2つの方法があります。
+
+1つ目は**内部結合**という方法で、2つのテーブルに共通のデータを取得する方法です。
+
+今回だとpostsにもcommentsにもデータがあるのはpost-1とpost-3だけなので、内部結合すると結果はこのようになります。
+
+postsテーブル
+
+| id | message |
+| --- | --- |
+| 1 | post-1 |
+| 2 | post-2 |
+| 3 | post-3 |
+
+commentsテーブル
+
+| id | post_id | message |
+| --- | --- | --- |
+| 1 | 1 | comment-1-1 |
+| 2 | 1 | comment-1-2 |
+| 3 | 3 | comment-3-1 |
+| 4 | 4 | comment-4-1 |
+
+postsテーブルとcommentsテーブルを内部結合した結果
+
+| id | message | id | post_id | message |
+| --- | --- | --- | --- | --- |
+| 1 | post-1 | 1 | 1 | comment-1-1 |
+| 1 | post-1 | 2 | 1 | comment-1-2 |
+| 3 | post-3 | 3 | 3 | comment-3-1 |
+
+2つ目の方法は**外部結合**という方法です。
+
+外部結合には、左のテーブルを軸にした**左外部結合**、右のテーブルを軸にした**右外部結合**があります。
+
+左外部結合の場合は、postsを軸にしてそれに対応するcommentがあれば取得するのでこのようになります。
+
+postsテーブル
+
+| id | message |
+| --- | --- |
+| 1 | post-1 |
+| 2 | post-2 |
+| 3 | post-3 |
+
+commentsテーブル
+
+| id | post_id | message |
+| --- | --- | --- |
+| 1 | 1 | comment-1-1 |
+| 2 | 1 | comment-1-2 |
+| 3 | 3 | comment-3-1 |
+| 4 | 4 | comment-4-1 |
+
+左外部結合の結果
+
+| id | message | id | post_id | message |
+| --- | --- | --- | --- | --- |
+| 1 | post-1 | 1 | 1 | comment-1-1 |
+| 1 | post-1 | 2 | 1 | comment-1-2 |
+| 2 | post-2 | NULL | NULL | NULL |
+| 3 | post-3 | 3 | 3 | comment-3-1 |
+
+commentがない箇所はNULL(ナル)になるので、注意しておきましょう。comment がついているかどうかに関わらず、**投稿の一覧ページを作るときなどに使えばいいですね。**
+
+一方右外部結合ですが、今度は comment だけ全て取得して、そこに紐づいた投稿があれば取得するので、結果はこのようになります。
+
+postsテーブル
+
+| id | message |
+| --- | --- |
+| 1 | post-1 |
+| 2 | post-2 |
+| 3 | post-3 |
+
+commentsテーブル
+
+| id | post_id | message |
+| --- | --- | --- |
+| 1 | 1 | comment-1-1 |
+| 2 | 1 | comment-1-2 |
+| 3 | 3 | comment-3-1 |
+| 4 | 4 | comment-4-1 |
+
+右外部結合
+
+| id | message | id | post_id | message |
+| --- | --- | --- | --- | --- |
+| 1 | post-1 | 1 | 1 | comment-1-1 |
+| 1 | post-1 | 2 | 1 | comment-1-2 |
+| 3 | post-3 | 3 | 3 | comment-3-1 |
+| NULL | NULL | 4 | 4 | comment-4-1 |
+
+該当する投稿がなければそこはNULLになるので、その点にも注意しておきましょう。そこに**紐づいた投稿があるかどうかに関わらず、 comment の一覧を表示したいときなどに使えばいいですね。**
+### 要点まとめ
+2つのテーブルからデータを取得する方法について見ていきます。
+
+- 内部結合の説明：結合すべき相手の行が見つからない場合に行が消滅してしまう通常の結合のこと。
+- 左外部結合の説明：「NULLの行を生み出しても、左表の全行を必ず出力する」処理のこと。
+- 右外部結合の説明：「NULLの行を意味出しても、右表の全行を必ず出力する」処理のこと。</details>
+
+
+<details><summary>#22 内部結合を使ってみよう</summary>
