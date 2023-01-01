@@ -2286,3 +2286,131 @@ id が 1 のレコードについて UPDATE をかけたのにも関わらず、
 
 <details><summary>#20 複数のテーブルを扱ってみよう</summary>
 
+posts テーブルですが、レコードを 3 つだけにして、こちらは id と message だけにしておきました。
+
+#19で見た、commentsテーブルを作成します。
+
+先ず、postsテーブルをコピーして、comments、commentにしておきます。
+
+次に、postのidと紐付けるためのカラムを追加します。
+
+post_id で整数型(INT)と書きます。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+DROP TABLE IF EXISTS comments; -- commentsに書き直す
+CREATE TABLE comments ( -- commentsに書き直す
+  id INT NOT NULL AUTO_INCREMENT,
+	post_id INT
+  comment VARCHAR(140), -- 単数形のcommentに書き直す
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+```
+
+後は、レコードをいくつか追加します。
+
+`INSERT INTO posts (message) VALUES
+('post-1'),
+('post-2'),
+('post-3');`
+
+をコピーして書き換えます。
+
+comments テーブルに対して、 post_id と comment の値を挿入していきましょう。
+
+ひとつ目の post に対してコメントといった感じで書いていけばいいですね。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+DROP TABLE IF EXISTS comments;
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+  
+INSERT INTO posts (message) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-1'),
+  (1, 'comment-1-1'),
+  (1, 'comment-1-1');
+```
+
+では 1 番目の post にもうひとつコメントが付いたとしましょう。それから 3 番目の post に対して 1 つのコメント、そして説明のために post に 4 番目はありませんが、このように 4 つ目のコメントを足してみましょう。
+
+ここで、postsとcommentsの中身を確認します。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+DROP TABLE IF EXISTS comments;
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+  
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1'),
+  (4, 'comment-4-1');
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
++----+---------+
+| id | message |
++----+---------+
+|  1 | post-1  |
+|  2 | post-2  |
+|  3 | post-3  |
++----+---------+
++----+---------+-------------+
+| id | post_id | comment     |
++----+---------+-------------+
+|  1 |       1 | comment-1-1 |
+|  2 |       1 | comment-1-2 |
+|  3 |       3 | comment-3-1 |
+|  4 |       4 | comment-4-1 |
++----+---------+-------------+
+```
+
+</details>
+
+
+<details><summary>#21 内部結合、外部結合について見ていこう</summary>
