@@ -3082,3 +3082,123 @@ id が 100 になって、それに関連するデータも 100 で更新され�
 
 
 <details><summary>#26 LAST_INSERT_ID()を使ってみよう</summary>
+
+今はデータの整合性が取れている状態です。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1');
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
++----+---------+
+| id | message |
++----+---------+
+|  1 | post-1  |
+|  2 | post-2  |
+|  3 | post-3  |
++----+---------+
++----+---------+-------------+
+| id | post_id | comment     |
++----+---------+-------------+
+|  1 |       1 | comment-1-1 |
+|  2 |       1 | comment-1-2 |
+|  3 |       3 | comment-3-1 |
++----+---------+-------------+
+```
+
+新しく投稿を追加したとしましょう。
+
+適当に、’new post!’とします。
+
+そして、この投稿にコメントを付けたかったとしましょう。
+
+その場合ですが、INSERT文を使ってあげればいいです。
+
+post_idについては、追加した投稿は4番目なので、4としてあげればいいです。
+
+post_idは4、commentは’new comment’としましょう。
+
+これでもいいのですが、commentを挿入するたびに今のように数えるのは面倒です。
+
+そこで、MySQLでは**直前に挿入されたレコードのidを調べる命令が用意されて**いて、`LAST_INSERT_ID`とすると自動的に4が入ってくれます。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1');
+  
+INSERT INTO posts (message) VALUES
+  ('new post!');
+
+-- INSERT INTO comments (post_id, comment) VALUES
+--   (4, 'new comment');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (LAST_INSERT_ID(), 'new comment');
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+```
+
+LAST_INSERT_IDも便利なので、慣れておいてください。
+### 要点まとめ
+直前に挿入されたレコードのIDを調べる命令について見ていきます。
+
+- LAST_INSERT_ID()：直前に挿入されたレコードのidを調べる命令。</details>
+
+
+<details><summary>#27 コメントにコメントをつけよう</summary>
+
