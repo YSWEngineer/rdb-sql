@@ -2634,3 +2634,128 @@ FROM
 
 <details><summary>#23 外部結合を使ってみよう</summary>
 
+左外部結合は、`LEFT OUTER JOIN` とすればいいのですが、実は `OUTER` は省略できるので、単に `LEFT JOIN` と書いてあげても左外部結合になります。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+DROP TABLE IF EXISTS comments;
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1'),
+  (4, 'comment-4-1');
+
+SELECT
+  *
+FROM
+  posts JOIN comments ON posts.id = comments.post_id;
+  
+SELECT
+  *
+FROM
+  -- posts LEFT OUTER JOIN comments ON posts.id = comments.post_id;
+  posts LEFT JOIN comments ON posts.id = comments.post_id; -- OUTERを省略可能
+```
+
+右外部結合はRIGHT JOINにすればOKです。
+
+```sql
+DROP TABLE IF EXISTS posts;
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+DROP TABLE IF EXISTS comments;
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment) VALUES
+  (1, 'comment-1-1'),
+  (1, 'comment-1-2'),
+  (3, 'comment-3-1'),
+  (4, 'comment-4-1');
+
+SELECT
+  *
+FROM
+  posts JOIN comments ON posts.id = comments.post_id;
+  
+SELECT
+  *
+FROM
+  -- posts LEFT OUTER JOIN comments ON posts.id = comments.post_id;
+  posts LEFT JOIN comments ON posts.id = comments.post_id;
+  
+SELECT
+  *
+FROM
+  posts RIGHT JOIN comments ON posts.id = comments.post_id;
+
++----+---------+----+---------+-------------+
+| id | message | id | post_id | comment     |
++----+---------+----+---------+-------------+
+|  1 | post-1  |  1 |       1 | comment-1-1 |
+|  1 | post-1  |  2 |       1 | comment-1-2 |
+|  3 | post-3  |  3 |       3 | comment-3-1 |
++----+---------+----+---------+-------------+
++----+---------+------+---------+-------------+
+| id | message | id   | post_id | comment     |
++----+---------+------+---------+-------------+
+|  1 | post-1  |    1 |       1 | comment-1-1 |
+|  1 | post-1  |    2 |       1 | comment-1-2 |
+|  3 | post-3  |    3 |       3 | comment-3-1 |
+|  2 | post-2  | NULL |    NULL | NULL        |
++----+---------+------+---------+-------------+
++------+---------+----+---------+-------------+
+| id   | message | id | post_id | comment     |
++------+---------+----+---------+-------------+
+|    1 | post-1  |  1 |       1 | comment-1-1 |
+|    1 | post-1  |  2 |       1 | comment-1-2 |
+|    3 | post-3  |  3 |       3 | comment-3-1 |
+| NULL | NULL    |  4 |       4 | comment-4-1 |
++------+---------+----+---------+-------------+
+```
+
+左外部結合では posts から全てレコードが抽出されていて、それに関連する comment があれば取得して、そしてなければ NULL で埋めてくれます。
+
+右外部結合ですが、まず comments から全てのレコードが抽出されて、それに関連する投稿があれば取得して、なければ NULL で埋めてくれます。
+
+このような違いがあるので、目的に応じて使い分けられるようにしておいてください。
+### 要点まとめ
+左外部結合と右外部結合についてみていきます。
+
+- LEFT OUTER JOIN：OUTERを省略できる。**※現場では省略形を多用している。**
+- RIGHT OUTER JOIN：OUTERを省略できる。</details>
+
+
+<details><summary>#24 外部キー制約を設定しよう</summary>
+
