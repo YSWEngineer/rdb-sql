@@ -4018,3 +4018,353 @@ SELECT * FROM t;
 
 <details><summary>#31 階層が深いコメントを抽出しよう</summary>
 
+再帰的なCTEが書けたので実行します。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  parent_id INT,
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment, parent_id) VALUES
+  (1, 'comment-1-1', NULL),
+  (1, 'comment-1-2', NULL),
+  (3, 'comment-3-1', NULL),
+  (1, 'comment-1-2-1', 2),
+  (1, 'comment-1-2-2', 2),
+  (1, 'comment-1-2-1-1', 4);
+
+/*
+post-1
+  comment-1-1
+  comment-1-2
+    comment-1-2-1
+      comment-1-2-1-1
+    comment-1-2-2
+post-2
+post-3
+  comment-3-1
+*/
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
+-- CTE (Common Table Expression)
+--   再帰的なCTE
+--   再帰的ではないCTE
+
+WITH RECURSIVE t AS (
+  -- n = 1
+  SELECT * FROM comments WHERE parent_id = 2
+  UNION ALL
+  -- n >= 2
+  SELECT
+    comments.*
+  FROM
+    comments JOIN t
+  ON
+    comments.parent_id = t.id
+)
+SELECT * FROM t;
+
++----+---------+
+| id | message |
++----+---------+
+|  1 | post-1  |
+|  2 | post-2  |
+|  3 | post-3  |
++----+---------+
++----+---------+-----------------+-----------+
+| id | post_id | comment         | parent_id |
++----+---------+-----------------+-----------+
+|  1 |       1 | comment-1-1     |      NULL |
+|  2 |       1 | comment-1-2     |      NULL |
+|  3 |       3 | comment-3-1     |      NULL |
+|  4 |       1 | comment-1-2-1   |         2 |
+|  5 |       1 | comment-1-2-2   |         2 |
+|  6 |       1 | comment-1-2-1-1 |         4 |
++----+---------+-----------------+-----------+
++------+---------+-----------------+-----------+
+| id   | post_id | comment         | parent_id |
++------+---------+-----------------+-----------+
+|    4 |       1 | comment-1-2-1   |         2 |
+|    5 |       1 | comment-1-2-2   |         2 |
+|    6 |       1 | comment-1-2-1-1 |         4 |
++------+---------+-----------------+-----------+
+```
+
+さらに深い階層にコメントを付けてみて、それも取得できるか見てあげましょう。
+
+commentsテーブルにもう一つレコードを挿入してあげます。’new comment’として、parent_idは最後のコメントにつけるので6番目になります。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  parent_id INT,
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment, parent_id) VALUES
+  (1, 'comment-1-1', NULL),
+  (1, 'comment-1-2', NULL),
+  (3, 'comment-3-1', NULL),
+  (1, 'comment-1-2-1', 2),
+  (1, 'comment-1-2-2', 2),
+  (1, 'comment-1-2-1-1', 4),
+  (1, 'new comment', 6);
+
+/*
+post-1
+  comment-1-1
+  comment-1-2
+    comment-1-2-1
+      comment-1-2-1-1
+    comment-1-2-2
+post-2
+post-3
+  comment-3-1
+*/
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
+-- CTE (Common Table Expression)
+--   再帰的なCTE
+--   再帰的ではないCTE
+
+WITH RECURSIVE t AS (
+  -- n = 1
+  SELECT * FROM comments WHERE parent_id = 2
+  UNION ALL
+  -- n >= 2
+  SELECT
+    comments.*
+  FROM
+    comments JOIN t
+  ON
+    comments.parent_id = t.id
+)
+SELECT * FROM t;
+
++----+---------+
+| id | message |
++----+---------+
+|  1 | post-1  |
+|  2 | post-2  |
+|  3 | post-3  |
++----+---------+
++----+---------+-----------------+-----------+
+| id | post_id | comment         | parent_id |
++----+---------+-----------------+-----------+
+|  1 |       1 | comment-1-1     |      NULL |
+|  2 |       1 | comment-1-2     |      NULL |
+|  3 |       3 | comment-3-1     |      NULL |
+|  4 |       1 | comment-1-2-1   |         2 |
+|  5 |       1 | comment-1-2-2   |         2 |
+|  6 |       1 | comment-1-2-1-1 |         4 |
+|  7 |       1 | new comment     |         6 |
++----+---------+-----------------+-----------+
++------+---------+-----------------+-----------+
+| id   | post_id | comment         | parent_id |
++------+---------+-----------------+-----------+
+|    4 |       1 | comment-1-2-1   |         2 |
+|    5 |       1 | comment-1-2-2   |         2 |
+|    6 |       1 | comment-1-2-1-1 |         4 |
+|    7 |       1 | new comment     |         6 |
++------+---------+-----------------+-----------+
+```
+
+深い階層のコメントまで一気に取得できています。
+
+再帰的な処理はやや難しいので、初回で全てを理解する必要はないのですが、こうした階層が深いデータを処理したいときにはCTEが便利ということを知っておくといいでしょう。
+### 質問：再帰的CTEの動きがよくわかりません。
+**回答：**
+
+[https://dotinstall.com/lessons/basic_mysql_advanced/55930](https://dotinstall.com/lessons/basic_mysql_advanced/55930) のレッスンで説明があったように、再帰的な CTE は処理を「再帰的」に繰り返します。（「再帰」はプログラミングでよく登場する概念です。再帰の意味がわからないときは検索して調べてみましょう。）
+
+そのため以下のような処理になります。
+
+- まず `parent_id = 2` のデータを抽出する → `id=4, 5` のデータが抽出される
+- 次に `parent_id=4`, `parent_id=5` のデータを抽出する → `id=6` のデータが抽出される
+- 次に `parent_id=6` のデータを抽出する → `id=7, 8` のデータが抽出される
+- 次に `parent_id=7`, `parent_id=8` のデータを抽出する → `id=9` のデータが抽出される
+- 次に `parent_id=9` のデータを抽出する → 抽出されるデータはないので処理終了
+
+このように抽出された結果を利用してどんどん数珠繋ぎ式にデータを抽出します。
+
+ポイントは [https://dotinstall.com/lessons/basic_mysql_advanced/55930](https://dotinstall.com/lessons/basic_mysql_advanced/55930) の1分28秒の説明にあります。
+
+> またこちらの処理が終わったらその結果を t にして、結果が無くなるまでこちらの処理を再起的に実行してくれるので、どれだけ階層が深くなっても、コメントを取得してくれるはずです。
+> 
+
+動画とあわせて見ていただきたいのですが、「その結果を t にして」がポイントです。また、「最初に実行する処理」は1回目しか実行されません。
+
+つまり、
+
+- 1回目の実行は「最初に実行する処理」を実行する
+- 2回目の実行は**1回目**の結果を元に「2回目以降に実行する処理」を実行する
+- 3回目の実行は**2回目**の結果を元に「2回目以降に実行する処理」を実行する
+- 4回目の実行は**3回目**の結果を元に「2回目以降に実行する処理」を実行する
+
+となります。
+
+> 最後のUNION ALLで tとして表示された全てのデータが連結しているのはなぜでしょうか？
+> 
+
+これは CTE の仕様ですね。再帰的に実行された ``SELECT` 文の結果をすべて連結します。
+
+> 最初にいただいた先生のご回答で、
+> 
+> 
+> > 次に parent_id=9 のデータを抽出する → 抽出されるデータはないので処理終了
+> > 
+> 
+> とありますが、こちらはparent_idではなく、idの間違えでしょうか？
+> 
+
+いいえ、以下のように処理がされているので `parent_id` で正しいです。
+
+> まず parent_id = 2 のデータを抽出する
+> 
+
+```sql
+  -- n = 1
+  SELECT * FROM comments WHERE parent_id = 2
+
+```
+
+→ `id=4`, `id=5` のデータが取得されます。データが取得されたので再度 `SELECT` 文を実行します。
+
+> 次に parent_id=4, parent_id=5 のデータを抽出する
+> 
+
+```sql
+  -- n >= 2
+  SELECT
+    comments.*
+  FROM
+    comments JOIN t
+  ON
+    comments.parent_id IN (4, 5)
+
+```
+
+→ `id=6` のデータが取得されます。データが取得されたので再度 `SELECT` 文を実行します。
+
+> 次に parent_id=6 のデータを抽出する
+> 
+
+```sql
+  -- n >= 2
+  SELECT
+    comments.*
+  FROM
+    comments JOIN t
+  ON
+    comments.parent_id = 6
+
+```
+
+→ `id=7`, `id=8` のデータが取得されます。データが取得されたので再度 `SELECT` 文を実行します。
+
+> 次に parent_id=7, parent_id=8 のデータを抽出する
+> 
+
+```sql
+  -- n >= 2
+  SELECT
+    comments.*
+  FROM
+    comments JOIN t
+  ON
+    comments.parent_id IN (7, 8)
+
+```
+
+→ `id=9` のデータが取得されます。データが取得されたので再度 `SELECT` 文を実行します。
+
+> 次に parent_id=9 のデータを抽出する
+> 
+
+```sql
+  -- n >= 2
+  SELECT
+    comments.*
+  FROM
+    comments JOIN t
+  ON
+    comments.parent_id = 9
+
+```
+
+→ 該当するデータはありませんでした。（次の`SELECT`文の `t` になるデータがないため）処理を終了します。
+
+元の SQL の後半部分は、
+
+```sql
+  -- n >= 2
+  SELECT
+    comments.*
+  FROM
+    comments JOIN t
+  ON
+    comments.parent_id = t.id
+
+```
+
+であり、この最後の `comments.parent_id = t.id` は JOIN の条件ですね。
+
+- `comments` テーブル
+- 前回の`SELECT`の結果レコード
+
+の2つを結合しているわけですが、その結合の条件が「`comments` テーブルの `parent_id` の値と、前回の`SELECT`の結果レコードの `id` の値が一致する場合」という条件になります。
+
+---
+
+> 比較演算子INについてですが、この場合ですと【「comments.parent_id」は「7」と「8」のいずれかに等しい】
+> 
+
+その通りです。</details>
+
+
+<details><summary>#32 TRIGGERを設定してみよう</summary>
+
