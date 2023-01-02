@@ -4368,3 +4368,113 @@ SELECT * FROM t;
 
 <details><summary>#32 TRIGGERを設定してみよう</summary>
 
+あるテーブルで何らかの変更が起きた時に、それをトリガーにして何らかの処理をすることができる、**トリガー**という仕組みについて見ていきます。
+
+posts テーブルが更新されたら、他のテーブルにログが残るようにしてあげましょう。
+
+postsテーブルに続いて、logs テーブルを作ります。
+
+テーブル名は logs にしてあげて、 created カラムも追加します。
+
+DATETIMEはDEFAULTで挿入された日時にしておきます。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE logs ( -- テーブル名はlogs
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  created DATETIME DEFAULT NOW(), -- DATETIMEはDEFAULTで挿入された日時にする
+  PRIMARY KEY (id)
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+SELECT * FROM posts;
+```
+
+トリガーの作り方ですが `CREATE TRIGGER` という文を使います。
+
+そのあとに、トリガーの名前を好きに付けられるのですが、今回は posts がアップデートされたときのトリガーなので、`posts_update_trigger`と付けておきましょう。
+
+次にどのタイミングでどんな処理をするかを指定するのですが `AFTER UPDATE ON` としてあげて posts が更新されたあとに、と指定します。
+
+次に更新されたひとつひとつの行に対して logs テーブルにデータを挿入していきたいので、少し長いのですがこのように書いてあげれば OK です。
+
+```sql
+CREATE TRIGGER
+  posts_update_trigger
+AFTER UPDATE ON
+  posts
+FOR EACH ROW
+  INSERT INTO
+    logs (message)
+  VALUES
+    ('Updated');
+```
+
+尚、トリガーはアップデートだけに使えるというわけではなくて、 INSERT や DELETE のタイミングでも使えますし、ここも AFTER ではなくて BEFORE とすれば処理前にトリガーを実行することができます。
+
+トリガーと logs がすでにあるとエラーになってしまうので、上の方を削除しておきましょう。
+
+もし logs テーブルが存在していたら削除、もしトリガーが存在していたら削除としたいので、 DROP TRIGGER 文を使ってあげます。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS logs;
+DROP TRIGGER IF EXISTS posts_update_trigger;
+```
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS logs;
+DROP TRIGGER IF EXISTS posts_update_trigger;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE logs (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  created DATETIME DEFAULT NOW(),
+  PRIMARY KEY (id)
+);
+
+CREATE TRIGGER
+  posts_update_trigger
+AFTER UPDATE ON
+  posts
+FOR EACH ROW
+  INSERT INTO
+    logs (message)
+  VALUES
+    ('Updated');
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+SELECT * FROM posts;
+```
+
+</details>
+
+
+<details><summary>#33 TRIGGERを使ってみよう</summary>
+
