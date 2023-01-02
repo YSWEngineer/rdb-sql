@@ -3389,3 +3389,371 @@ SELECT * FROM comments;
 
 
 <details><summary>#28 コメントのコメントを抽出してみよう</summary>
+
+comment に comment が付けられるようになったので、次は 2 番目の comment に付いているすべての comment を抽出する方法について考えてみましょう。
+
+その場合、まず 2 番目の comment を親に持つ comment を抽出すればいいので、`SELECT * FROM comments WHERE paren_id = 2;`　とすればcomment-1-2-1とcomment-1-2-2を取得できます。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  parent_id INT,
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment, parent_id) VALUES
+  (1, 'comment-1-1', NULL),
+  (1, 'comment-1-2', NULL),
+  (3, 'comment-3-1', NULL),
+  (1, 'comment-1-2-1', 2),
+  (1, 'comment-1-2-2', 2),
+  (1, 'comment-1-2-1-1', 4);
+
+/*
+post-1
+  comment-1-1
+  comment-1-2
+    comment-1-2-1
+      comment-1-2-1-1
+    comment-1-2-2
+post-2
+post-3
+  comment-3-1
+*/
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
+SELECT * FROM comments WHERE parent_id = 2;
+
++----+---------+
+| id | message |
++----+---------+
+|  1 | post-1  |
+|  2 | post-2  |
+|  3 | post-3  |
++----+---------+
++----+---------+-----------------+-----------+
+| id | post_id | comment         | parent_id |
++----+---------+-----------------+-----------+
+|  1 |       1 | comment-1-1     |      NULL |
+|  2 |       1 | comment-1-2     |      NULL |
+|  3 |       3 | comment-3-1     |      NULL |
+|  4 |       1 | comment-1-2-1   |         2 |
+|  5 |       1 | comment-1-2-2   |         2 |
+|  6 |       1 | comment-1-2-1-1 |         4 |
++----+---------+-----------------+-----------+
++----+---------+---------------+-----------+
+| id | post_id | comment       | parent_id |
++----+---------+---------------+-----------+
+|  4 |       1 | comment-1-2-1 |         2 |
+|  5 |       1 | comment-1-2-2 |         2 |
++----+---------+---------------+-----------+
+```
+
+では、その次の階層(comment-1-2-1-1)の comment を取得したいのですが、comments テーブルから parent_id がここで抽出した id と一致するものを抽出してあげればいいです。
+
+ comments テーブルとこちらの結果を comments テーブルの parent_id とこの結果の id で内部結合してあげれば良さそうです。
+
+結果を t というテーブルだと仮定して、ちょっとクエリを組み立ててみましょう。
+
+commentsから抽出したいので、`SELECT comments.* FROM commetns JOIN t`　と書いてtを内部結合します。
+
+その上で、commentsテーブルのparent_idとtのidを紐付けます。
+
+このtは、`SELECT * FROM comments WHERE parent_id = 2`　の結果なので、サブクエリを使い
+
+`commetns JOIN (
+SELECT * FROM comments WHERE parent_id = 2
+) AS t`
+
+と書きます。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  parent_id INT,
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment, parent_id) VALUES
+  (1, 'comment-1-1', NULL),
+  (1, 'comment-1-2', NULL),
+  (3, 'comment-3-1', NULL),
+  (1, 'comment-1-2-1', 2),
+  (1, 'comment-1-2-2', 2),
+  (1, 'comment-1-2-1-1', 4);
+
+/*
+post-1
+  comment-1-1
+  comment-1-2
+    comment-1-2-1
+      comment-1-2-1-1
+    comment-1-2-2
+post-2
+post-3
+  comment-3-1
+*/
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
+SELECT * FROM comments WHERE parent_id = 2;
+
+SELECT
+  comments.*
+FROM
+  comments JOIN (
+    SELECT * FROM comments WHERE parent_id = 2
+  ) AS t
+ON
+  comments.parent_id = t.id;
+
++----+---------+
+| id | message |
++----+---------+
+|  1 | post-1  |
+|  2 | post-2  |
+|  3 | post-3  |
++----+---------+
++----+---------+-----------------+-----------+
+| id | post_id | comment         | parent_id |
++----+---------+-----------------+-----------+
+|  1 |       1 | comment-1-1     |      NULL |
+|  2 |       1 | comment-1-2     |      NULL |
+|  3 |       3 | comment-3-1     |      NULL |
+|  4 |       1 | comment-1-2-1   |         2 |
+|  5 |       1 | comment-1-2-2   |         2 |
+|  6 |       1 | comment-1-2-1-1 |         4 |
++----+---------+-----------------+-----------+
++----+---------+---------------+-----------+
+| id | post_id | comment       | parent_id |
++----+---------+---------------+-----------+
+|  4 |       1 | comment-1-2-1 |         2 |
+|  5 |       1 | comment-1-2-2 |         2 |
++----+---------+---------------+-----------+
++----+---------+-----------------+-----------+
+| id | post_id | comment         | parent_id |
++----+---------+-----------------+-----------+
+|  6 |       1 | comment-1-2-1-1 |         4 |
++----+---------+-----------------+-----------+
+```
+
+あとは、これらの結果を縦にくっつければいいので、 `UNION ALL` を使ってあげれば良いでしょう。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  parent_id INT,
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment, parent_id) VALUES
+  (1, 'comment-1-1', NULL),
+  (1, 'comment-1-2', NULL),
+  (3, 'comment-3-1', NULL),
+  (1, 'comment-1-2-1', 2),
+  (1, 'comment-1-2-2', 2),
+  (1, 'comment-1-2-1-1', 4);
+
+/*
+post-1
+  comment-1-1
+  comment-1-2
+    comment-1-2-1
+      comment-1-2-1-1
+    comment-1-2-2
+post-2
+post-3
+  comment-3-1
+*/
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
+SELECT * FROM comments WHERE parent_id = 2
+UNION ALL
+SELECT
+  comments.*
+FROM
+  comments JOIN (
+    SELECT * FROM comments WHERE parent_id = 2
+  ) AS t
+ON
+  comments.parent_id = t.id;
+
++----+---------+
+| id | message |
++----+---------+
+|  1 | post-1  |
+|  2 | post-2  |
+|  3 | post-3  |
++----+---------+
++----+---------+-----------------+-----------+
+| id | post_id | comment         | parent_id |
++----+---------+-----------------+-----------+
+|  1 |       1 | comment-1-1     |      NULL |
+|  2 |       1 | comment-1-2     |      NULL |
+|  3 |       3 | comment-3-1     |      NULL |
+|  4 |       1 | comment-1-2-1   |         2 |
+|  5 |       1 | comment-1-2-2   |         2 |
+|  6 |       1 | comment-1-2-1-1 |         4 |
++----+---------+-----------------+-----------+
++----+---------+-----------------+-----------+
+| id | post_id | comment         | parent_id |
++----+---------+-----------------+-----------+
+|  4 |       1 | comment-1-2-1   |         2 |
+|  5 |       1 | comment-1-2-2   |         2 |
+|  6 |       1 | comment-1-2-1-1 |         4 |
++----+---------+-----------------+-----------+
+```
+
+ただ、見ての通り SQL が長くなりすぎますし、もっと深い階層に comment が付いたらさらに長くなってしまいます。
+### 質問：コメントのコメントの抽出の仕方がわかりません
+回答：
+
+ソースコードにコメントを入れて説明文にマッピングさせましたので下記のソースコードでご確認ください。
+
+```sql
+SELECT
+  comments.*
+FROM
+  comments JOIN (
+    -- 「comments テーブルから parent_id がここで抽出した id と一致するもの」
+    -- に t という名前を付けます。
+    SELECT * FROM comments WHERE parent_id = 2
+  ) AS t
+ON
+  -- comments テーブルと tと名前を付けたテーブルを結合させます
+  comments.parent_id = t.id;
+
+```
+
+イメージ湧きますか？
+
+### 質問：UNION ALLで括弧が必要なのはどういうときですか？
+**回答：ORDER BYまたLIMITを使う場合、SELECTに括弧が必要になります。**
+
+結論から言うと、#07 で括弧が必用なのは`ORDER BY` と `LIMIT` を使っているからです。
+
+`UNION` 構文で個々の `SELECT` に `ORDER BY` または `LIMIT` を適用する場合はそれぞれの `SELECT` を括弧でくくる必用があります。
+
+もちろん #28 の方も括弧でくくって問題ありません。その方がどこからどこまでが `SELECT` のまとまりかわかりやすくていいかもしれませんね。
+
+### 質問：内部結合の挙動が理解できません。
+
+```sql
+SELECT comments.*
+FROM comments JOIN (
+  SELECT * FROM comments WHERE parent_id = 2
+  ) AS t
+ON
+  comments.parent_id = t.id;
+
+```
+
+の内部結合によって　なぜ、parent_id = 4 だけが抽出されたのかわかりません。どの様な流れになっているのでしょうか？
+**回答：**
+
+まず、`SELECT * FROM comments WHERE parent_id = 2`このクエリの結果ですが、以下のようになっていると思います。
+
+```
++----+---------+---------------+-----------+
+| id | post_id | comment       | parent_id |
++----+---------+---------------+-----------+
+|  4 |       1 | comment-1-2-1 |         2 |
+|  5 |       1 | comment-1-2-2 |         2 |
++----+---------+---------------+-----------+
+
+```
+
+そして、このクエリの結果を`t`として、commentsと`comments.parent_id = t.id`を条件に結合しているため内部結合の結果、`comments.parent_id`の値が`t.id`の4, 5と等しいレコードのみが残ります。`comments.parent_id`が5のレコードは存在しませんので、`comments.parent_id`が4のレコードのみが抽出されることになります。
+
+### 質問：SELECT *…ではダメですか？
+**回答：UNION ALLでレコードを連結する場合、カラム数を揃える必要があります。**
+
+```sql
+SELECT * FROM ...
+
+```
+
+とすると結果はサブクエリとの内部結合になるため、
+
+```
++----+---------+-----------------+-----------+----+---------+---------------+-----------+
+| id | post_id | comment         | parent_id | id | post_id | comment       | parent_id |
++----+---------+-----------------+-----------+----+---------+---------------+-----------+
+|  6 |       1 | comment-1-2-1-1 |         4 |  4 |       1 | comment-1-2-1 |         2 |
++----+---------+-----------------+-----------+----+---------+---------------+-----------+
+
+```
+
+といった形になります。
+
+ただ今回はUNION ALLで最初のSQLと連結するためにカラム数を揃えないといけません。そこで`comments`テーブルの値だけを使っています。
+### 要点まとめ
+コメントのコメントを抽出してUNION ALLでまとめる方法について見ていきます。
+
+- コメントのコメントを抽出
+- UNION ALL：2つのSELECT文の結果を足し合わせる。</details>
+
+
+<details><summary>
