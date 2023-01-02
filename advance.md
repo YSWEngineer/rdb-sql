@@ -3756,4 +3756,131 @@ SELECT * FROM ...
 - UNION ALL：2つのSELECT文の結果を足し合わせる。</details>
 
 
-<details><summary>
+<details><summary>#29 CTEを使ってみよう</summary>
+
+前回見たような階層が深くなっていくデータを処理したい場合、 **CTE** という仕組みが使えます。
+
+CTE は Common Table Expression の略で、クエリ内で使える一時的なテーブルのことです。
+
+また CTE には**再帰的な CTE** と、**再帰的ではない CTE** があって、再帰的な CTE が今回実現したい、階層が深くなっていくデータを処理するための方法になります。
+
+再帰的ではない CTE はサブクエリを分かりやすく書き換えるためのものです。
+
+再帰的ではない CTE を使うには上のほうで WITH としてあげて、 CTE の名前を好きに付けてあげて、 AS としてあげて、 CTE としたいサブクエリをここに書いてあげます。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  parent_id INT,
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment, parent_id) VALUES
+  (1, 'comment-1-1', NULL),
+  (1, 'comment-1-2', NULL),
+  (3, 'comment-3-1', NULL),
+  (1, 'comment-1-2-1', 2),
+  (1, 'comment-1-2-2', 2),
+  (1, 'comment-1-2-1-1', 4);
+
+/*
+post-1
+  comment-1-1
+  comment-1-2
+    comment-1-2-1
+      comment-1-2-1-1
+    comment-1-2-2
+post-2
+post-3
+  comment-3-1
+*/
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
+SELECT * FROM comments WHERE parent_id = 2
+UNION ALL
+SELECT
+  comments.*
+FROM
+  comments JOIN (
+    SELECT * FROM comments WHERE parent_id = 2
+  ) AS t
+ON
+  comments.parent_id = t.id;
+  
+-- CTE (Common Table Expression)
+--   再帰的なCTE
+--   再帰的ではないCTE
+
+WITH t AS ( -- 括弧内にCTEとしたいサブクエリを書く。
+	SELECT * FROM comments WHERE parent_id = 2
+)
+SELECT
+  comments.*
+FROM
+  comments JOIN t
+ON
+  comments.parent_id = t.id;
+-- WITH〜t.idまでが一つの命令なので、セミコロンは最後に付ける。
+
++----+---------+
+| id | message |
++----+---------+
+|  1 | post-1  |
+|  2 | post-2  |
+|  3 | post-3  |
++----+---------+
++----+---------+-----------------+-----------+
+| id | post_id | comment         | parent_id |
++----+---------+-----------------+-----------+
+|  1 |       1 | comment-1-1     |      NULL |
+|  2 |       1 | comment-1-2     |      NULL |
+|  3 |       3 | comment-3-1     |      NULL |
+|  4 |       1 | comment-1-2-1   |         2 |
+|  5 |       1 | comment-1-2-2   |         2 |
+|  6 |       1 | comment-1-2-1-1 |         4 |
++----+---------+-----------------+-----------+
++----+---------+-----------------+-----------+
+| id | post_id | comment         | parent_id |
++----+---------+-----------------+-----------+
+|  4 |       1 | comment-1-2-1   |         2 |
+|  5 |       1 | comment-1-2-2   |         2 |
+|  6 |       1 | comment-1-2-1-1 |         4 |
++----+---------+-----------------+-----------+
++----+---------+-----------------+-----------+
+| id | post_id | comment         | parent_id |
++----+---------+-----------------+-----------+
+|  6 |       1 | comment-1-2-1-1 |         4 |
++----+---------+-----------------+-----------+
+```
+
+再帰的ではない CTE を使うとサブクエリを上に持ってきて、やや分かりやすく書くことができるので、使い方に慣れておきましょう。
+###　要点まとめ
+クエリ内で使える一時的なテーブルを設定できるCTEについて見ていきます。
+
+- CTEの概要：階層が深くなっていくデータを処理したい場合、 **CTE** という仕組みが使えます。CTE は Common Table Expression の略で、クエリ内で使える一時的なテーブルのことです。
+- 再帰的ではないCTE：サブクエリを分かりやすく書き換えるためのもの。</details>
+
+
+<details><summary>#30 再帰的なCTEを組み立てよう</summary>
+
