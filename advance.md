@@ -3884,3 +3884,137 @@ ON
 
 <details><summary>#30 再帰的なCTEを組み立てよう</summary>
 
+先ずどうするかというと `WITH RECURSIVE` としてあげて CTE の名前を書いてあげます。
+
+そして最初に実行する処理、 2 回目以降に再起的に実行する処理を書いて UNION ALL で繋いであげます。
+
+```sql
+WITH RECURSIVE t AS (
+  -- n = 1
+  UNION ALL
+  -- n >= 2
+)
+```
+
+最初に実行する処理ですが 2 番目のコメントに付いた最初の階層のコメントを取得すればいいので、このクエリをそのまま貼り付けてあげれば OK でしょう。
+
+```sql
+WITH RECURSIVE t AS (
+  -- n = 1
+  SELECT * FROM comments WHERE parent_id = 2
+  UNION ALL
+  -- n >= 2
+)
+```
+
+次にその下の階層を取得する処理なので、とりあえずこちらをそのまま書いてあげましょう。
+
+```sql
+WITH RECURSIVE t AS (
+  -- n = 1
+  SELECT * FROM comments WHERE parent_id = 2
+  UNION ALL
+  -- n >= 2
+  SELECT
+    comments.*
+  FROM
+    comments JOIN (
+      SELECT * FROM comments WHERE parent_id = 2
+    ) AS t
+  ON
+    comments.parent_id = t.id
+)
+```
+
+これがどう処理されるかですが、最初の階層を取得するとそれを t にしてこちらの処理をしてくれます。
+
+またこちらの処理が終わったらその結果を t にして、結果が無くなるまでこちらの処理を再起的に実行してくれるので、どれだけ階層が深くなっても、コメントを取得してくれるはずです。
+
+あとはその結果をまとめて表示したいので、`SELECT * FROM t;`と書きます。
+
+また、WITH〜SELECT * FROM t;までが一つの命令になるので、セミコロンは最後に一つになる点にも注意してください。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE comments (
+  id INT NOT NULL AUTO_INCREMENT,
+  post_id INT,
+  comment VARCHAR(140),
+  parent_id INT,
+  PRIMARY KEY (id),
+  FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+
+INSERT INTO comments (post_id, comment, parent_id) VALUES
+  (1, 'comment-1-1', NULL),
+  (1, 'comment-1-2', NULL),
+  (3, 'comment-3-1', NULL),
+  (1, 'comment-1-2-1', 2),
+  (1, 'comment-1-2-2', 2),
+  (1, 'comment-1-2-1-1', 4);
+
+/*
+post-1
+  comment-1-1
+  comment-1-2
+    comment-1-2-1
+      comment-1-2-1-1
+    comment-1-2-2
+post-2
+post-3
+  comment-3-1
+*/
+
+SELECT * FROM posts;
+SELECT * FROM comments;
+
+SELECT * FROM comments WHERE parent_id = 2
+UNION ALL
+SELECT
+  comments.*
+FROM
+  comments JOIN (
+    SELECT * FROM comments WHERE parent_id = 2
+  ) AS t
+ON
+  comments.parent_id = t.id;
+
+-- CTE (Common Table Expression)
+--   再帰的なCTE
+--   再帰的ではないCTE
+
+WITH RECURSIVE t AS (
+  -- n = 1
+  SELECT * FROM comments WHERE parent_id = 2
+  UNION ALL
+  -- n >= 2
+  SELECT
+    comments.*
+  FROM
+    comments JOIN t
+  ON
+    comments.parent_id = t.id
+)
+SELECT * FROM t;
+```
+
+</details>
+
+
+<details><summary>#31 階層が深いコメントを抽出しよう</summary>
+
