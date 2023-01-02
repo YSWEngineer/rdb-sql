@@ -4478,3 +4478,206 @@ SELECT * FROM posts;
 
 <details><summary>#33 TRIGGERを使ってみよう</summary>
 
+トリガーをアップデートしてあげて、logsテーブルにログが残るか確認します。
+
+今回はidが1のレコードのmessageを更新して見ましょう。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS logs;
+DROP TRIGGER IF EXISTS posts_update_trigger;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE logs (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  created DATETIME DEFAULT NOW(),
+  PRIMARY KEY (id)
+);
+
+CREATE TRIGGER
+  posts_update_trigger
+AFTER UPDATE ON
+  posts
+FOR EACH ROW
+  INSERT INTO
+    logs (message)
+  VALUES
+    ('Updated');
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+UPDATE posts SET message = 'post-1 updated' WHERE id = 1;
+
+SELECT * FROM posts;
+SELECT * FROM logs;
+
++----+----------------+
+| id | message        |
++----+----------------+
+|  1 | post-1 updated |
+|  2 | post-2         |
+|  3 | post-3         |
++----+----------------+
++----+---------+---------------------+
+| id | message | created             |
++----+---------+---------------------+
+|  1 | Updated | 2022-07-15 16:38:20 |
++----+---------+---------------------+
+```
+
+post-1の中身が更新されていて、logsテーブルにもUpdatedというログが残っています。
+
+ログに、更新前、更新後の値を含める方法も見ておきましょう。
+
+トリガーでは **OLD** と **NEW** という特殊なキーワードが使えるので **CONCAT 関数**を使って、このように値を組み立ててあげます。
+
+そうすると message の更新前、更新後の値を挿入してくれます。
+
+```sql
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS logs;
+DROP TRIGGER IF EXISTS posts_update_trigger;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE logs (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  created DATETIME DEFAULT NOW(),
+  PRIMARY KEY (id)
+);
+
+CREATE TRIGGER
+  posts_update_trigger
+AFTER UPDATE ON
+  posts
+FOR EACH ROW
+  INSERT INTO
+    logs (message)
+  VALUES
+    -- ('Updated');
+    (CONCAT(OLD.message, ' -> ', NEW.message)); -- CONCAT関数は文字列を連結する
+
+INSERT INTO posts (message) VALUES
+  ('post-1'),
+  ('post-2'),
+  ('post-3');
+UPDATE posts SET message = 'post-1 updated' WHERE id = 1;
+
+SELECT * FROM posts;
+SELECT * FROM logs;
+
++----+----------------+
+| id | message        |
++----+----------------+
+|  1 | post-1 updated |
+|  2 | post-2         |
+|  3 | post-3         |
++----+----------------+
++----+--------------------------+---------------------+
+| id | message                  | created             |
++----+--------------------------+---------------------+
+|  1 | post-1 -> post-1 updated | 2022-07-15 16:47:16 |
++----+--------------------------+---------------------+
+```
+
+設定されているトリガーの一覧を見るには、 **SHOW TRIGGERS**を使います。
+
+```sql
+SELECT * FROM posts;
+SELECT * FROM logs;
+
+SHOW TRIGGERS;
+
++----+--------------------------+---------------------+
++----------------------+--------+-------+---------------------------------------------------------------------------------------------+--------+------------------------+-------------------------------------------------------------------------------------------+----------+----------------------+----------------------+--------------------+
+| Trigger              | Event  | Table | Statement                                                                                   | Timing | Created                | sql_mode                                                                                  | Definer  | character_set_client | collation_connection | Database Collation |
++----------------------+--------+-------+---------------------------------------------------------------------------------------------+--------+------------------------+-------------------------------------------------------------------------------------------+----------+----------------------+----------------------+--------------------+
+| posts_update_trigger | UPDATE | posts | INSERT INTO
+    logs (message)
+  VALUES
+    
+    (CONCAT(OLD.message, ' -> ', NEW.message)) | AFTER  | 2022-07-15 16:51:13.66 | STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION | dbuser@% | utf8mb4              | utf8mb4_general_ci   | utf8mb4_general_ci |
++----------------------+--------+-------+---------------------------------------------------------------------------------------------+--------+------------------------+-------------------------------------------------------------------------------------------+----------+----------------------+----------------------+--------------------+
+```
+
+トリガー情報が表示されますが、見づらい状態です。そんな時は最後のセミコロンを**\G**に変えてあげればOKです。
+
+```sql
+SELECT * FROM posts;
+SELECT * FROM logs;
+
+-- SHOW TRIGGERS;
+SHOW TRIGGERS\G
+
+*************************** 1. row ***************************
+             Trigger: posts_update_trigger
+               Event: UPDATE
+               Table: posts
+           Statement: INSERT INTO
+    logs (message)
+  VALUES
+    
+    (CONCAT(OLD.message, ' -> ', NEW.message))
+              Timing: AFTER
+             Created: 2022-07-15 16:54:08.54
+            sql_mode: STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+             Definer: dbuser@%
+character_set_client: utf8mb4
+collation_connection: utf8mb4_general_ci
+  Database Collation: utf8mb4_general_ci
+```
+
+トリガーの結果として一行表示されていて、それぞれの項目が見やすくなっています。
+
+こうした確認方法も知っておくと良いでしょう。
+### 質問：(CONCAT(OLD.message, '->', NEW.message)) とするだけで posts テーブルの message の新旧が表示されるのはなぜですか？
+回答：TRIGGER を作成する際にどのテーブルに対する操作かを指定できるためです。
+
+TRIGGER を作成する際にどのテーブルに対する操作かを指定する部分がありますね今回ですとこの部分
+
+```sql
+CREATE TRIGGER
+  posts_update_trigger
+AFTER UPDATE ON
+  posts
+
+```
+
+`posts` テーブルに何か更新があったあとにという指定があります。
+
+ここの指定により以下の `message` は `posts` テーブルのものであると指定されています
+
+```sql
+  INSERT INTO
+    logs (message)
+  VALUES
+    -- ('Updated');
+    (CONCAT(OLD.message, ' -> ', NEW.message));
+```
+
+### 要点まとめ
+TRIGGERの動作確認をした後に、更新前後の値を取得する方法についても見ていきます。
+
+- OLD,NEW：更新前、更新後の値を挿入する。
+- SHOW TRIGGERS：設定されているトリガーの一覧を見ることができる。
+- \G：設定しているTRIGGERの一覧が見やすく表示される。</details>
+
+
+<details><summary>#34 外部ファイルからデータを読み込もう</summary>
+
+	
