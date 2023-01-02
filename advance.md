@@ -4680,4 +4680,560 @@ TRIGGERの動作確認をした後に、更新前後の値を取得する方法�
 
 <details><summary>#34 外部ファイルからデータを読み込もう</summary>
 
-	
+別のファイルからデータを読み込む方法について見ていきます。
+
+posts テーブルがあって、 id 、 message 、 likes 、 area が設定されています。
+
+また今回は、 data.csv というファイルを用意しておきました。
+
+一行目が見出しで、それ以降は message 、 likes 、 area のデータが入っているファイルです。
+
+なお、データファイルには id の連番が含まれていない点に注意しておきましょう。
+
+では、データを読み込んでいきたいのですが、同じサーバにある外部ファイルを読み込むには、 **LOAD DATA LOCAL INFILE** としてあげて、ファイル名を指定してあげます。
+
+それをどちらのテーブルに流し込むかを **INTO TABLE** で指定してあげましょう。
+
+それから、ファイル形式に応じていくつかのオプションが必要です。
+
+まず、項目の区切りがカンマだったら、 **FIELDS TERMINATED BY** を使ってあげてください。
+
+行の区切りも指定してあげる必要があって、今回 \n を改行として使っているので、`LINES TERMINATED BY '\n’`と書いてあげます。
+
+そのうえで、データをどのフィールドに挿入するかを最後に指定してあげます。
+
+message 、 likes 、 area の順番だったので、`(message, likes, area);`と書けば OK です。
+
+これでデータが流し込めるはずなので、 SELECT * FROM posts で確認してみましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+LOAD DATA LOCAL INFILE 'data.csv' INTO TABLE posts
+  FIELDS TERMINATED BY ','
+  LINES TERMINATED BY '\n'
+  (message, likes, area);
+  
+SELECT * FROM posts;
+
++-----+----------+-------+-----------+
+| id  | message  | likes | area      |
++-----+----------+-------+-----------+
+|   1 | message  |     0 | area      | -- 見出し行がレコードとして挿入されてしまった
+|   2 | post-1   |   136 | Tokyo     |
+|   3 | post-2   |    27 | Osaka     |
+|   4 | post-3   |   125 | Osaka     |
+|   5 | post-4   |    40 | Kanazawa  |
+|   6 | post-5   |    19 | Wakayama  |
+|   7 | post-6   |   101 | Wakayama  |
+|   8 | post-7   |   125 | Osaka     |
+|   9 | post-8   |    67 | Kanazawa  |
+|  10 | post-9   |   137 | Tokyo     |
+|  11 | post-10  |    77 | Kumamoto  |
+|  12 | post-11  |     4 | Kanazawa  |
+|  13 | post-12  |   167 | Kagoshima |
+|  14 | post-13  |   101 | Nara      |
+|  15 | post-14  |   170 | Kumamoto  |
+|  16 | post-15  |   169 | Nagoya    |
+|  17 | post-16  |    59 | Wakayama  |
+|  18 | post-17  |    97 | Kumamoto  |
+|  19 | post-18  |   179 | Nagoya    |
+|  20 | post-19  |    26 | Kumamoto  |
+|  21 | post-20  |    60 | Mito      |
+|  22 | post-21  |   147 | Osaka     |
+|  23 | post-22  |    14 | Hiroshima |
+|  24 | post-23  |   192 | Fukuoka   |
+|  25 | post-24  |   124 | Kumamoto  |
+|  26 | post-25  |    45 | Wakayama  |
+|  27 | post-26  |    16 | Niigata   |
+|  28 | post-27  |     1 | Wakayama  |
+|  29 | post-28  |    14 | Wakayama  |
+|  30 | post-29  |   128 | Wakayama  |
+|  31 | post-30  |    46 | Fukuoka   |
+|  32 | post-31  |    32 | Mito      |
+|  33 | post-32  |    17 | Niigata   |
+|  34 | post-33  |    30 | Tokyo     |
+|  35 | post-34  |    25 | Saitama   |
+|  36 | post-35  |   113 | Kyoto     |
+|  37 | post-36  |   193 | Tokyo     |
+|  38 | post-37  |   184 | Kyoto     |
+|  39 | post-38  |   178 | Kumamoto  |
+|  40 | post-39  |    50 | Niigata   |
+|  41 | post-40  |    14 | Nagoya    |
+|  42 | post-41  |    90 | Osaka     |
+|  43 | post-42  |    34 | Hiroshima |
+|  44 | post-43  |   152 | Mito      |
+|  45 | post-44  |    16 | Wakayama  |
+|  46 | post-45  |    48 | Nagoya    |
+|  47 | post-46  |    64 | Tokyo     |
+|  48 | post-47  |    94 | Hiroshima |
+|  49 | post-48  |   111 | Kanazawa  |
+|  50 | post-49  |    30 | Nagoya    |
+|  51 | post-50  |    24 | Mito      |
+|  52 | post-51  |   153 | Kanazawa  |
+|  53 | post-52  |   115 | Niigata   |
+|  54 | post-53  |   129 | Nara      |
+|  55 | post-54  |    29 | Kumamoto  |
+|  56 | post-55  |   121 | Niigata   |
+|  57 | post-56  |   153 | Kagoshima |
+|  58 | post-57  |    31 | Kumamoto  |
+|  59 | post-58  |   120 | Kumamoto  |
+|  60 | post-59  |   198 | Mito      |
+|  61 | post-60  |   104 | Kumamoto  |
+|  62 | post-61  |   172 | Saitama   |
+|  63 | post-62  |   197 | Saitama   |
+|  64 | post-63  |    88 | Kanazawa  |
+|  65 | post-64  |   144 | Nagoya    |
+|  66 | post-65  |    45 | Niigata   |
+|  67 | post-66  |   194 | Nagoya    |
+|  68 | post-67  |   102 | Hiroshima |
+|  69 | post-68  |    60 | Fukuoka   |
+|  70 | post-69  |    81 | Kanazawa  |
+|  71 | post-70  |   190 | Fukuoka   |
+|  72 | post-71  |   102 | Niigata   |
+|  73 | post-72  |    38 | Kagoshima |
+|  74 | post-73  |   159 | Mito      |
+|  75 | post-74  |   111 | Kumamoto  |
+|  76 | post-75  |   186 | Mito      |
+|  77 | post-76  |   124 | Kanazawa  |
+|  78 | post-77  |    66 | Hiroshima |
+|  79 | post-78  |    77 | Tokyo     |
+|  80 | post-79  |   122 | Kumamoto  |
+|  81 | post-80  |   162 | Kanazawa  |
+|  82 | post-81  |   108 | Tokyo     |
+|  83 | post-82  |   156 | Hiroshima |
+|  84 | post-83  |   133 | Kumamoto  |
+|  85 | post-84  |    31 | Fukuoka   |
+|  86 | post-85  |    37 | Tokyo     |
+|  87 | post-86  |   165 | Niigata   |
+|  88 | post-87  |   161 | Saitama   |
+|  89 | post-88  |   137 | Fukuoka   |
+|  90 | post-89  |    84 | Mito      |
+|  91 | post-90  |   186 | Osaka     |
+|  92 | post-91  |    74 | Nara      |
+|  93 | post-92  |     2 | Mito      |
+|  94 | post-93  |    10 | Nagoya    |
+|  95 | post-94  |   135 | Kanazawa  |
+|  96 | post-95  |   199 | Nagoya    |
+|  97 | post-96  |    46 | Wakayama  |
+|  98 | post-97  |    62 | Nagoya    |
+|  99 | post-98  |   108 | Kanazawa  |
+| 100 | post-99  |    18 | Wakayama  |
+| 101 | post-100 |     6 | Nagoya    |
+| 102 | post-101 |   179 | Niigata   |
+| 103 | post-102 |    83 | Nagoya    |
+| 104 | post-103 |   118 | Kanazawa  |
+| 105 | post-104 |   116 | Nara      |
+| 106 | post-105 |   140 | Fukuoka   |
+| 107 | post-106 |   132 | Kumamoto  |
+| 108 | post-107 |    36 | Tokyo     |
+| 109 | post-108 |   131 | Fukuoka   |
+| 110 | post-109 |    59 | Kagoshima |
+| 111 | post-110 |   174 | Tokyo     |
+| 112 | post-111 |   199 | Osaka     |
+| 113 | post-112 |   166 | Kumamoto  |
+| 114 | post-113 |   121 | Niigata   |
+| 115 | post-114 |    44 | Fukuoka   |
+| 116 | post-115 |   162 | Tokyo     |
+| 117 | post-116 |    24 | Fukuoka   |
+| 118 | post-117 |   134 | Kumamoto  |
+| 119 | post-118 |    95 | Nara      |
+| 120 | post-119 |   135 | Saitama   |
+| 121 | post-120 |   102 | Tokyo     |
+| 122 | post-121 |   137 | Nara      |
+| 123 | post-122 |   192 | Kagoshima |
+| 124 | post-123 |    51 | Nagoya    |
+| 125 | post-124 |    29 | Kyoto     |
+| 126 | post-125 |   155 | Kagoshima |
+| 127 | post-126 |    21 | Nagoya    |
+| 128 | post-127 |   161 | Hiroshima |
+| 129 | post-128 |    35 | Nagoya    |
+| 130 | post-129 |   138 | Fukuoka   |
+| 131 | post-130 |    49 | Kagoshima |
+| 132 | post-131 |   185 | Kagoshima |
+| 133 | post-132 |    65 | Osaka     |
+| 134 | post-133 |   135 | Saitama   |
+| 135 | post-134 |   195 | Nara      |
+| 136 | post-135 |   180 | Kyoto     |
+| 137 | post-136 |   188 | Hiroshima |
+| 138 | post-137 |   161 | Mito      |
+| 139 | post-138 |   155 | Kanazawa  |
+| 140 | post-139 |    96 | Tokyo     |
+| 141 | post-140 |    79 | Osaka     |
+| 142 | post-141 |   175 | Kanazawa  |
+| 143 | post-142 |     1 | Kagoshima |
+| 144 | post-143 |    50 | Wakayama  |
+| 145 | post-144 |    60 | Hiroshima |
+| 146 | post-145 |   100 | Saitama   |
+| 147 | post-146 |    38 | Osaka     |
+| 148 | post-147 |   176 | Kumamoto  |
+| 149 | post-148 |   129 | Wakayama  |
+| 150 | post-149 |   165 | Nara      |
+| 151 | post-150 |   170 | Mito      |
+| 152 | post-151 |   109 | Nagoya    |
+| 153 | post-152 |   166 | Kumamoto  |
+| 154 | post-153 |    62 | Kagoshima |
+| 155 | post-154 |    42 | Nara      |
+| 156 | post-155 |   104 | Kanazawa  |
+| 157 | post-156 |   112 | Nara      |
+| 158 | post-157 |   165 | Saitama   |
+| 159 | post-158 |     8 | Nara      |
+| 160 | post-159 |    32 | Saitama   |
+| 161 | post-160 |   180 | Mito      |
+| 162 | post-161 |    23 | Nagoya    |
+| 163 | post-162 |    44 | Kagoshima |
+| 164 | post-163 |   165 | Tokyo     |
+| 165 | post-164 |   175 | Niigata   |
+| 166 | post-165 |    61 | Kagoshima |
+| 167 | post-166 |   192 | Kyoto     |
+| 168 | post-167 |    78 | Tokyo     |
+| 169 | post-168 |    89 | Osaka     |
+| 170 | post-169 |   149 | Kyoto     |
+| 171 | post-170 |   129 | Wakayama  |
+| 172 | post-171 |   188 | Tokyo     |
+| 173 | post-172 |   170 | Fukuoka   |
+| 174 | post-173 |   112 | Kanazawa  |
+| 175 | post-174 |   147 | Tokyo     |
+| 176 | post-175 |    28 | Hiroshima |
+| 177 | post-176 |   186 | Wakayama  |
+| 178 | post-177 |    68 | Fukuoka   |
+| 179 | post-178 |    84 | Tokyo     |
+| 180 | post-179 |   105 | Kyoto     |
+| 181 | post-180 |    88 | Nara      |
+| 182 | post-181 |   194 | Niigata   |
+| 183 | post-182 |   126 | Kagoshima |
+| 184 | post-183 |    78 | Kyoto     |
+| 185 | post-184 |   162 | Kyoto     |
+| 186 | post-185 |    69 | Mito      |
+| 187 | post-186 |    72 | Mito      |
+| 188 | post-187 |    18 | Osaka     |
+| 189 | post-188 |    59 | Hiroshima |
+| 190 | post-189 |   127 | Nagoya    |
+| 191 | post-190 |    98 | Kanazawa  |
+| 192 | post-191 |   115 | Hiroshima |
+| 193 | post-192 |    36 | Wakayama  |
+| 194 | post-193 |   199 | Nara      |
+| 195 | post-194 |    46 | Hiroshima |
+| 196 | post-195 |   105 | Nagoya    |
+| 197 | post-196 |    38 | Saitama   |
+| 198 | post-197 |   163 | Niigata   |
+| 199 | post-198 |    41 | Kagoshima |
+| 200 | post-199 |   104 | Nagoya    |
+| 201 | post-200 |    40 | Osaka     |
++-----+----------+-------+-----------+
+```
+
+idについては自動で連番が振られます。
+
+一番上を見ると変なデータが紛れ込んでいます。
+
+データの一行目をスキップしたいなら、さらに記述が必要で、こちらに IGNORE 1 LINES としてあげれば OK です。
+
+```sql
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+LOAD DATA LOCAL INFILE 'data.csv' INTO TABLE posts
+  FIELDS TERMINATED BY ','
+  LINES TERMINATED BY '\n'
+  IGNORE 1 LINES
+  (message, likes, area);
+  
+SELECT * FROM posts;
+
++-----+----------+-------+-----------+
+| id  | message  | likes | area      |
++-----+----------+-------+-----------+
+|   1 | post-1   |   136 | Tokyo     |
+|   2 | post-2   |    27 | Osaka     |
+|   3 | post-3   |   125 | Osaka     |
+|   4 | post-4   |    40 | Kanazawa  |
+|   5 | post-5   |    19 | Wakayama  |
+|   6 | post-6   |   101 | Wakayama  |
+|   7 | post-7   |   125 | Osaka     |
+|   8 | post-8   |    67 | Kanazawa  |
+|   9 | post-9   |   137 | Tokyo     |
+|  10 | post-10  |    77 | Kumamoto  |
+|  11 | post-11  |     4 | Kanazawa  |
+|  12 | post-12  |   167 | Kagoshima |
+|  13 | post-13  |   101 | Nara      |
+|  14 | post-14  |   170 | Kumamoto  |
+|  15 | post-15  |   169 | Nagoya    |
+|  16 | post-16  |    59 | Wakayama  |
+|  17 | post-17  |    97 | Kumamoto  |
+|  18 | post-18  |   179 | Nagoya    |
+|  19 | post-19  |    26 | Kumamoto  |
+|  20 | post-20  |    60 | Mito      |
+|  21 | post-21  |   147 | Osaka     |
+|  22 | post-22  |    14 | Hiroshima |
+|  23 | post-23  |   192 | Fukuoka   |
+|  24 | post-24  |   124 | Kumamoto  |
+|  25 | post-25  |    45 | Wakayama  |
+|  26 | post-26  |    16 | Niigata   |
+|  27 | post-27  |     1 | Wakayama  |
+|  28 | post-28  |    14 | Wakayama  |
+|  29 | post-29  |   128 | Wakayama  |
+|  30 | post-30  |    46 | Fukuoka   |
+|  31 | post-31  |    32 | Mito      |
+|  32 | post-32  |    17 | Niigata   |
+|  33 | post-33  |    30 | Tokyo     |
+|  34 | post-34  |    25 | Saitama   |
+|  35 | post-35  |   113 | Kyoto     |
+|  36 | post-36  |   193 | Tokyo     |
+|  37 | post-37  |   184 | Kyoto     |
+|  38 | post-38  |   178 | Kumamoto  |
+|  39 | post-39  |    50 | Niigata   |
+|  40 | post-40  |    14 | Nagoya    |
+|  41 | post-41  |    90 | Osaka     |
+|  42 | post-42  |    34 | Hiroshima |
+|  43 | post-43  |   152 | Mito      |
+|  44 | post-44  |    16 | Wakayama  |
+|  45 | post-45  |    48 | Nagoya    |
+|  46 | post-46  |    64 | Tokyo     |
+|  47 | post-47  |    94 | Hiroshima |
+|  48 | post-48  |   111 | Kanazawa  |
+|  49 | post-49  |    30 | Nagoya    |
+|  50 | post-50  |    24 | Mito      |
+|  51 | post-51  |   153 | Kanazawa  |
+|  52 | post-52  |   115 | Niigata   |
+|  53 | post-53  |   129 | Nara      |
+|  54 | post-54  |    29 | Kumamoto  |
+|  55 | post-55  |   121 | Niigata   |
+|  56 | post-56  |   153 | Kagoshima |
+|  57 | post-57  |    31 | Kumamoto  |
+|  58 | post-58  |   120 | Kumamoto  |
+|  59 | post-59  |   198 | Mito      |
+|  60 | post-60  |   104 | Kumamoto  |
+|  61 | post-61  |   172 | Saitama   |
+|  62 | post-62  |   197 | Saitama   |
+|  63 | post-63  |    88 | Kanazawa  |
+|  64 | post-64  |   144 | Nagoya    |
+|  65 | post-65  |    45 | Niigata   |
+|  66 | post-66  |   194 | Nagoya    |
+|  67 | post-67  |   102 | Hiroshima |
+|  68 | post-68  |    60 | Fukuoka   |
+|  69 | post-69  |    81 | Kanazawa  |
+|  70 | post-70  |   190 | Fukuoka   |
+|  71 | post-71  |   102 | Niigata   |
+|  72 | post-72  |    38 | Kagoshima |
+|  73 | post-73  |   159 | Mito      |
+|  74 | post-74  |   111 | Kumamoto  |
+|  75 | post-75  |   186 | Mito      |
+|  76 | post-76  |   124 | Kanazawa  |
+|  77 | post-77  |    66 | Hiroshima |
+|  78 | post-78  |    77 | Tokyo     |
+|  79 | post-79  |   122 | Kumamoto  |
+|  80 | post-80  |   162 | Kanazawa  |
+|  81 | post-81  |   108 | Tokyo     |
+|  82 | post-82  |   156 | Hiroshima |
+|  83 | post-83  |   133 | Kumamoto  |
+|  84 | post-84  |    31 | Fukuoka   |
+|  85 | post-85  |    37 | Tokyo     |
+|  86 | post-86  |   165 | Niigata   |
+|  87 | post-87  |   161 | Saitama   |
+|  88 | post-88  |   137 | Fukuoka   |
+|  89 | post-89  |    84 | Mito      |
+|  90 | post-90  |   186 | Osaka     |
+|  91 | post-91  |    74 | Nara      |
+|  92 | post-92  |     2 | Mito      |
+|  93 | post-93  |    10 | Nagoya    |
+|  94 | post-94  |   135 | Kanazawa  |
+|  95 | post-95  |   199 | Nagoya    |
+|  96 | post-96  |    46 | Wakayama  |
+|  97 | post-97  |    62 | Nagoya    |
+|  98 | post-98  |   108 | Kanazawa  |
+|  99 | post-99  |    18 | Wakayama  |
+| 100 | post-100 |     6 | Nagoya    |
+| 101 | post-101 |   179 | Niigata   |
+| 102 | post-102 |    83 | Nagoya    |
+| 103 | post-103 |   118 | Kanazawa  |
+| 104 | post-104 |   116 | Nara      |
+| 105 | post-105 |   140 | Fukuoka   |
+| 106 | post-106 |   132 | Kumamoto  |
+| 107 | post-107 |    36 | Tokyo     |
+| 108 | post-108 |   131 | Fukuoka   |
+| 109 | post-109 |    59 | Kagoshima |
+| 110 | post-110 |   174 | Tokyo     |
+| 111 | post-111 |   199 | Osaka     |
+| 112 | post-112 |   166 | Kumamoto  |
+| 113 | post-113 |   121 | Niigata   |
+| 114 | post-114 |    44 | Fukuoka   |
+| 115 | post-115 |   162 | Tokyo     |
+| 116 | post-116 |    24 | Fukuoka   |
+| 117 | post-117 |   134 | Kumamoto  |
+| 118 | post-118 |    95 | Nara      |
+| 119 | post-119 |   135 | Saitama   |
+| 120 | post-120 |   102 | Tokyo     |
+| 121 | post-121 |   137 | Nara      |
+| 122 | post-122 |   192 | Kagoshima |
+| 123 | post-123 |    51 | Nagoya    |
+| 124 | post-124 |    29 | Kyoto     |
+| 125 | post-125 |   155 | Kagoshima |
+| 126 | post-126 |    21 | Nagoya    |
+| 127 | post-127 |   161 | Hiroshima |
+| 128 | post-128 |    35 | Nagoya    |
+| 129 | post-129 |   138 | Fukuoka   |
+| 130 | post-130 |    49 | Kagoshima |
+| 131 | post-131 |   185 | Kagoshima |
+| 132 | post-132 |    65 | Osaka     |
+| 133 | post-133 |   135 | Saitama   |
+| 134 | post-134 |   195 | Nara      |
+| 135 | post-135 |   180 | Kyoto     |
+| 136 | post-136 |   188 | Hiroshima |
+| 137 | post-137 |   161 | Mito      |
+| 138 | post-138 |   155 | Kanazawa  |
+| 139 | post-139 |    96 | Tokyo     |
+| 140 | post-140 |    79 | Osaka     |
+| 141 | post-141 |   175 | Kanazawa  |
+| 142 | post-142 |     1 | Kagoshima |
+| 143 | post-143 |    50 | Wakayama  |
+| 144 | post-144 |    60 | Hiroshima |
+| 145 | post-145 |   100 | Saitama   |
+| 146 | post-146 |    38 | Osaka     |
+| 147 | post-147 |   176 | Kumamoto  |
+| 148 | post-148 |   129 | Wakayama  |
+| 149 | post-149 |   165 | Nara      |
+| 150 | post-150 |   170 | Mito      |
+| 151 | post-151 |   109 | Nagoya    |
+| 152 | post-152 |   166 | Kumamoto  |
+| 153 | post-153 |    62 | Kagoshima |
+| 154 | post-154 |    42 | Nara      |
+| 155 | post-155 |   104 | Kanazawa  |
+| 156 | post-156 |   112 | Nara      |
+| 157 | post-157 |   165 | Saitama   |
+| 158 | post-158 |     8 | Nara      |
+| 159 | post-159 |    32 | Saitama   |
+| 160 | post-160 |   180 | Mito      |
+| 161 | post-161 |    23 | Nagoya    |
+| 162 | post-162 |    44 | Kagoshima |
+| 163 | post-163 |   165 | Tokyo     |
+| 164 | post-164 |   175 | Niigata   |
+| 165 | post-165 |    61 | Kagoshima |
+| 166 | post-166 |   192 | Kyoto     |
+| 167 | post-167 |    78 | Tokyo     |
+| 168 | post-168 |    89 | Osaka     |
+| 169 | post-169 |   149 | Kyoto     |
+| 170 | post-170 |   129 | Wakayama  |
+| 171 | post-171 |   188 | Tokyo     |
+| 172 | post-172 |   170 | Fukuoka   |
+| 173 | post-173 |   112 | Kanazawa  |
+| 174 | post-174 |   147 | Tokyo     |
+| 175 | post-175 |    28 | Hiroshima |
+| 176 | post-176 |   186 | Wakayama  |
+| 177 | post-177 |    68 | Fukuoka   |
+| 178 | post-178 |    84 | Tokyo     |
+| 179 | post-179 |   105 | Kyoto     |
+| 180 | post-180 |    88 | Nara      |
+| 181 | post-181 |   194 | Niigata   |
+| 182 | post-182 |   126 | Kagoshima |
+| 183 | post-183 |    78 | Kyoto     |
+| 184 | post-184 |   162 | Kyoto     |
+| 185 | post-185 |    69 | Mito      |
+| 186 | post-186 |    72 | Mito      |
+| 187 | post-187 |    18 | Osaka     |
+| 188 | post-188 |    59 | Hiroshima |
+| 189 | post-189 |   127 | Nagoya    |
+| 190 | post-190 |    98 | Kanazawa  |
+| 191 | post-191 |   115 | Hiroshima |
+| 192 | post-192 |    36 | Wakayama  |
+| 193 | post-193 |   199 | Nara      |
+| 194 | post-194 |    46 | Hiroshima |
+| 195 | post-195 |   105 | Nagoya    |
+| 196 | post-196 |    38 | Saitama   |
+| 197 | post-197 |   163 | Niigata   |
+| 198 | post-198 |    41 | Kagoshima |
+| 199 | post-199 |   104 | Nagoya    |
+| 200 | post-200 |    40 | Osaka     |
++-----+----------+-------+-----------+
+```
+
+外部ファイルの形式によっては、さらにオプションが必要な場合もありますが、こうした操作もできるようになっておきましょう。
+### 質問：カンマ区切りでないファイルでも FIELDS TERMINATED BY が使えるのですか？
+回答：はい、使えます。
+
+下記のCSV取り込みの`FIELDS TERMINATED BY`についてですね。
+
+```sql
+LOAD DATA LOCAL INFILE 'data.csv' INTO TABLE posts
+  FIELDS TERMINATED BY ','
+  LINES TERMINATED BY '\n'
+  IGNORE 1 LINES
+  (message, likes, area);
+
+```
+
+はい。100%ご理解の通り、「取り込みたいCSVファイルの区切り方がカンマであれば」という意味でOKです！
+
+実はこの`LOAD DATA・・`ですが、対象がCSVとは限らず、カンマ以外で区切られたファイル、例えば
+
+```
+post-1 136 Tokyo
+post-2 27 Osaka
+
+```
+
+のようにスペース区切りのファイルでも対応することができます。
+
+そのような場合は`FIELDS TERMINATED BY ' '（スペース）`とすればOKですね。
+
+ということでご理解の通り`FIELDS TERMINATED BY`は様々な形式のファイルに対応するために、区切り方を指定しているというわけです。
+### 質問：\nを改行として使っているというのは？
+回答：環境によっては改行が別の表現になることもあります。
+
+行を区切るための改行コードは OS によって異なっており、`\n` 以外に主に `\r` と `\r\n` があります。Linux OS では通常 `\n` を使いますので、今回はその改行コードを使用しております。
+
+ご興味がありましたら「改行コード」で Google 検索してみてください。
+
+**回答2：**
+
+```
+LINES TERMINATED BY '\n'
+```
+
+は行の終わりの文字を指定していますが，これは何も指定しないと
+
+```
+'\n'
+```
+
+が指定されたものとして扱われるので，入れても入れなくても変化がないかと思います．
+
+例えばWindowsで作成されたファイルは行末が
+
+```
+\r\n
+```
+
+になっていることもあるので，そういった場合に
+
+```
+LINES TERMINATED BY '\r\n'
+```
+
+と指定する場合もあります。
+### 要点まとめ
+別のファイルからデータを読み込む方法について見ていきます。
+
+- LOAD DATA LOCAL INFILE：同じサーバにある外部ファイルを読み込む。
+- FIELDS TERMINATED：読み込むデータの項目の区切りがカンマ(,)の場合に使う。
+- LINES TERMINATED：行の区切りを指定する。
+- IGNORE n LIKES：データのn行目をスキップする。</details>
+
+
+<details><summary>#35 インデックスを使ってみよう</summary>
+
