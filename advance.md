@@ -5404,3 +5404,192 @@ possible_keys: PRIMARY
 
 <details><summary>#37 インデックスを設定してみよう</summary>
 
+インデックスが設定されていないクエリでも確認します。
+
+```sql
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+LOAD DATA LOCAL INFILE 'data.csv' INTO TABLE posts
+  FIELDS TERMINATED BY ','
+  LINES TERMINATED BY '\n'
+  IGNORE 1 LINES
+  (message, likes, area);
+
+-- SHOW INDEX FROM posts\G
+-- EXPLAIN SELECT * FROM posts WHERE id = 30\G
+
+EXPLAIN SELECT * FROM posts WHERE area = 'Kyoto'\G
+
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: posts
+         type: ALL
+possible_keys: NULL
+          key: NULL
+      key_len: NULL
+          ref: NULL
+         rows: 200
+        Extra: Using where
+```
+
+key を見ると NULL になっていて、インデックスが使われていないことがわかります。
+
+また、 rows は 200 件になっているので、最初から最後まで見てから検索結果を返しているので、低速なクエリであることもわかります。
+
+今回、エリアで頻繁に検索するようになったとしてインデックスを設定してあげましょう。
+
+CREATE TABLE で設定することもできるのですが、あとから付け外しすることが多いので **ALTER TABLE** を使っていきましょう。
+
+インデックスを追加するには **ADD INDEX** としてあげて、インデックスの名前を付けてあげます。
+
+そのうえで、どのカラムに対してのインデックスかを指定してあげれば OK です。
+
+そして、**SHOW INDEX**で確認します。
+
+```sql
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+LOAD DATA LOCAL INFILE 'data.csv' INTO TABLE posts
+  FIELDS TERMINATED BY ','
+  LINES TERMINATED BY '\n'
+  IGNORE 1 LINES
+  (message, likes, area);
+
+-- SHOW INDEX FROM posts\G
+-- EXPLAIN SELECT * FROM posts WHERE id = 30\G
+
+ALTER TABLE posts ADD INDEX index_area(area);
+SHOW INDEX FROM posts\G
+EXPLAIN SELECT * FROM posts WHERE area = 'Kyoto'\G
+
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: posts
+         type: ALL
+possible_keys: NULL
+          key: NULL
+      key_len: NULL
+          ref: NULL
+         rows: 200
+        Extra: Using where
+~ $ mysql -h db -t -u dbuser -pdbpass myapp < main.sql
+*************************** 1. row ***************************
+        Table: posts
+   Non_unique: 0
+     Key_name: PRIMARY
+ Seq_in_index: 1
+  Column_name: id
+    Collation: A
+  Cardinality: 33
+     Sub_part: NULL
+       Packed: NULL
+         Null: 
+   Index_type: BTREE
+      Comment: 
+Index_comment: 
+*************************** 2. row ***************************
+        Table: posts
+   Non_unique: 1
+     Key_name: index_area
+ Seq_in_index: 1
+  Column_name: area
+    Collation: A
+  Cardinality: 28
+     Sub_part: NULL
+       Packed: NULL
+         Null: YES
+   Index_type: BTREE
+      Comment: 
+Index_comment: 
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: posts
+         type: ref
+possible_keys: index_area
+          key: index_area
+      key_len: 83
+          ref: const
+         rows: 9
+        Extra: Using index condition
+```
+
+インデックスの一覧では PRIMARY と area カラムにインデックスが設定されていて、 EXPLAIN の結果を見ると今度は key でちゃんと index_area が使われているのがわかりますし、 rows も大幅に減っているのでこのクエリが高速に動作するようになったのがわかります。
+
+エリアでの検索が遅いなと感じるようになったら、このようにインデックスを設定してあげるといいでしょう。
+
+インデックスを外す方法についても見ておきましょう。
+
+その場合は、 **ALTER TABLE** の **DROP INDEX** を使ってあげます。
+
+ちゃんと外れたかどうか **SHOW INDEX** で確認してみます。
+
+インデックスを追加しているのですが、そのあとにインデックスを外しているので SHOW INDEX では PRIMARY KEY だけが表示されるはずです。
+
+```sql
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+LOAD DATA LOCAL INFILE 'data.csv' INTO TABLE posts
+  FIELDS TERMINATED BY ','
+  LINES TERMINATED BY '\n'
+  IGNORE 1 LINES
+  (message, likes, area);
+
+-- SHOW INDEX FROM posts\G
+-- EXPLAIN SELECT * FROM posts WHERE id = 30\G
+
+ALTER TABLE posts ADD INDEX index_area(area);
+-- SHOW INDEX FROM posts\G
+-- EXPLAIN SELECT * FROM posts WHERE area = 'Kyoto'\G
+
+ALTER TABLE posts DROP INDEX index_area;
+SHOW INDEX FROM posts\G
+
+*************************** 1. row ***************************
+        Table: posts
+   Non_unique: 0
+     Key_name: PRIMARY
+ Seq_in_index: 1
+  Column_name: id
+    Collation: A
+  Cardinality: 199
+     Sub_part: NULL
+       Packed: NULL
+         Null: 
+   Index_type: BTREE
+      Comment: 
+Index_comment:
+```
+
+インデックスについてはもっと奥が深いのですが、**データが増えてきてパフォーマンスが落ちてきたら EXPLAIN を使って調査しつつ、適切にインデックスを設定してあげる**といいでしょう。
+### 要点まとめ
+インデックスを設定する方法と、外す方法についてみていきます。
+
+- ALTER TABLE ... ADD INDEX …：インデックスを追加。
+- ALTER TABLE ... DROP INDEX …：インデックスを外す。</details>						      
