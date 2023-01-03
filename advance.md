@@ -5283,3 +5283,124 @@ posts
 
 <details><summary>#36 EXPLAINでクエリを分析しよう</summary>
 
+先ずはインデックスで今設定されているものを確認します。
+
+前回説明した通り、主キーには自動的にインデックスが作られているはずなので、その情報が出てくるはずです。
+
+`SHOW INDEX FROM テーブル名`と書きます。
+
+見てみると、横に長く見づらいので`\G`を使います。
+
+```sql
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+LOAD DATA LOCAL INFILE 'data.csv' INTO TABLE posts
+  FIELDS TERMINATED BY ','
+  LINES TERMINATED BY '\n'
+  IGNORE 1 LINES
+  (message, likes, area);
+  
+SHOW INDEX FROM posts;
+
++-------+------------+----------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+
+| Table | Non_unique | Key_name | Seq_in_index | Column_name | Collation | Cardinality | Sub_part | Packed | Null | Index_type | Comment | Index_comment |
++-------+------------+----------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+
+| posts |          0 | PRIMARY  |            1 | id          | A         |          25 |     NULL | NULL   |      | BTREE      |         |               |
++-------+------------+----------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+
+
+-- \Gを使用
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+LOAD DATA LOCAL INFILE 'data.csv' INTO TABLE posts
+  FIELDS TERMINATED BY ','
+  LINES TERMINATED BY '\n'
+  IGNORE 1 LINES
+  (message, likes, area);
+  
+SHOW INDEX FROM posts\G
+
+*************************** 1. row ***************************
+        Table: posts
+   Non_unique: 0
+     Key_name: PRIMARY
+ Seq_in_index: 1
+  Column_name: id
+    Collation: A
+  Cardinality: 33
+     Sub_part: NULL
+       Packed: NULL
+         Null: 
+   Index_type: BTREE
+      Comment: 
+Index_comment:
+```
+
+id のフィールドに PRIMARY というインデックスが設定されています。
+
+それから実際に id を使った検索で、このインデックスが使われているかどうか、確認する方法も見ておきます。
+
+では id を使った検索として、 `SELECT * FROM posts WHERE id = 30` を使ってみましょう。
+
+このようにクエリを書いてあげて、このクエリでどのインデックスが使われているかは、先頭に **EXPLAIN** を付けてあげれば調べることができます。結果は少し長くなるので、 \G にしてあげましょう。
+
+```sql
+DROP TABLE IF EXISTS posts;
+
+CREATE TABLE posts (
+  id INT NOT NULL AUTO_INCREMENT,
+  message VARCHAR(140),
+  likes INT,
+  area VARCHAR(20),
+  PRIMARY KEY (id)
+);
+
+LOAD DATA LOCAL INFILE 'data.csv' INTO TABLE posts
+  FIELDS TERMINATED BY ','
+  LINES TERMINATED BY '\n'
+  IGNORE 1 LINES
+  (message, likes, area);
+  
+SHOW INDEX FROM posts\G
+EXPLAIN SELECT * FROM posts WHERE id = 30\G
+
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: posts
+         type: const
+possible_keys: PRIMARY
+          key: PRIMARY
+      key_len: 4
+          ref: const
+         rows: 1
+        Extra:
+```
+
+見てあげるといろいろありますが、見るべき項目は **key** と **rows** で、 key はクエリで実際に使われたインデックスの名前、 rows は検索対象となるレコード数の見積もりです。
+
+まずは、このようにインデックスについて確認できるようになっておきましょう。
+### 要点まとめ
+設定されているインデックスを確認した後にEXPLAINの使い方について見ていきます。
+
+- SHOW INDEX：INDEXの確認を行う。SHOW INDEX FROM テーブル名
+- EXPLAIN：クエリの実行方法を調べて、表示する。</details>
+
+
+<details><summary>#37 インデックスを設定してみよう</summary>
+
