@@ -26,7 +26,7 @@
 
 ## [第11章 さまざまな支援機能](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter11.md)
 
-## [第10章 テーブルの作成](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter9.md)
+## [第12章 テーブルの設計](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter12.md)
 
 ## ・ドットインストール『MySQL入門基礎編』『MySQL入門応用編』
 
