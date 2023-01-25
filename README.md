@@ -12,7 +12,7 @@
 
 ## [第4章 検索結果の加工](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter4.md)
 
-## [第0章 データベースを学ぶにあたって](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter0.md)
+## [第5章 式と関数](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter5.md)
 
 ## [第0章 データベースを学ぶにあたって](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter0.md)
 
