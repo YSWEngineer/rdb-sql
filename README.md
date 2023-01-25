@@ -20,7 +20,7 @@
 
 ## [第8章 複数テーブルの結合](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter8.md)
 
-## [第0章 データベースを学ぶにあたって](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter0.md)
+## [第9章 トランザクション](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter9.md)
 
 ## ・ドットインストール『MySQL入門基礎編』『MySQL入門応用編』
 
