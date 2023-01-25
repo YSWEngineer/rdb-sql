@@ -16,7 +16,7 @@
 
 ## [第6章 集計とグループ化](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter6.md)
 
-## [第0章 データベースを学ぶにあたって](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter0.md)
+## [第7章 副問い合わせ](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter7.md)
 
 ## [第0章 データベースを学ぶにあたって](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter0.md)
 
