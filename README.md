@@ -14,7 +14,7 @@
 
 ## [第5章 式と関数](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter5.md)
 
-## [第0章 データベースを学ぶにあたって](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter0.md)
+## [第6章 集計とグループ化](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter6.md)
 
 ## [第0章 データベースを学ぶにあたって](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter0.md)
 
