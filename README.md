@@ -1,6 +1,6 @@
 # RDB,SQL
 
-## ・書籍『スッキリわかるSQL入門』
+## 📖書籍『スッキリわかるSQL入門』
 
 ## [第0章 データベースを学ぶにあたって](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter0.md)
 
@@ -28,5 +28,11 @@
 
 ## [第12章 テーブルの設計](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter12.md)
 
-## ・ドットインストール『MySQL入門基礎編』『MySQL入門応用編』
+## 💻ドットインストール『MySQL入門基礎編』
+
+## [・#01~#27](https://github.com/YSWEngineer/rdb-sql/blob/main/basic.md)
+
+## 💻ドットインストール『MySQL入門応用編』
+
+## [・
 
