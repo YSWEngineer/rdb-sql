@@ -34,5 +34,5 @@
 
 ## 💻ドットインストール『MySQL入門応用編』
 
-## [・
+## [・#01~#37](https://github.com/YSWEngineer/rdb-sql/blob/main/advance.md)
 
