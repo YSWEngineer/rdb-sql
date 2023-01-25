@@ -30,9 +30,9 @@
 
 ## 💻ドットインストール『MySQL入門基礎編』
 
-## [・#01~#27](https://github.com/YSWEngineer/rdb-sql/blob/main/basic.md)
+## [・#01 MySQLを使ってみよう~#27 テーブルの設計を変更してみよう](https://github.com/YSWEngineer/rdb-sql/blob/main/basic.md)
 
 ## 💻ドットインストール『MySQL入門応用編』
 
-## [・#01~#37](https://github.com/YSWEngineer/rdb-sql/blob/main/advance.md)
+## [・#01 集計関数を使っていこう~#37 インデックスを設定してみよう](https://github.com/YSWEngineer/rdb-sql/blob/main/advance.md)
 
