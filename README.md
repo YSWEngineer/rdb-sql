@@ -24,7 +24,7 @@
 
 ## [第10章 テーブルの作成](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter10.md)
 
-## [第10章 テーブルの作成](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter9.md)
+## [第11章 さまざまな支援機能](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter11.md)
 
 ## [第10章 テーブルの作成](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter9.md)
 
