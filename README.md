@@ -1,6 +1,6 @@
 # RDB,SQL
 
-## 📖書籍『スッキリわかるSQL入門』
+# 📖書籍『スッキリわかるSQL入門』
 
 ## [第0章 データベースを学ぶにあたって](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter0.md)
 
