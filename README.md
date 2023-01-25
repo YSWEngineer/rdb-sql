@@ -22,6 +22,12 @@
 
 ## [第9章 トランザクション](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter9.md)
 
+## [第10章 テーブルの作成](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter10.md)
+
+## [第10章 テーブルの作成](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter9.md)
+
+## [第10章 テーブルの作成](https://github.com/YSWEngineer/rdb-sql/blob/main/chapter9.md)
+
 ## ・ドットインストール『MySQL入門基礎編』『MySQL入門応用編』
 
 から学んだ内容をまとめています。
