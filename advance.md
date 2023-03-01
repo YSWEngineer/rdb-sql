@@ -1,4 +1,4 @@
-# 💻ドットインストール MySQL入門 応用編
+# 💻dotinstall MySQL入門 応用編
 
 <details><summary>#01 集計関数を使っていこう</summary>
 
