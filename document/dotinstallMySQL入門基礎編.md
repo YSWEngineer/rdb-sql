@@ -1601,7 +1601,7 @@ SELECT * FROM posts WHERE likes NOT IN (4, 12);
     - IN(＝ で判定する条件を OR で繋いだ場合にINを使用可能)</details>
 
 
-<details><summary>#17 LIKEと%で文字列を抽出しよう</summary>
+**<details><summary>#17 LIKEと%で文字列を抽出しよう</summary>**
 
 文字列の抽出について見ていきますが、完全一致なら今まで見てきたように、=を使ってあげればOKです。
 
@@ -1683,7 +1683,7 @@ SELECT * FROM posts WHERE message LIKE '%i%';
     - BINARY(大文字小文字を区別)</details>
 
 
-<details><summary>#18 LIKEと_で文字列を抽出しよう</summary>
+**<details><summary>#18 LIKEと_で文字列を抽出しよう</summary>**
 
 任意の1文字を表す_(アンダーバー、アンダースコア)について。例えば、今回の条件ですが、 message が任意の 1 文字がふたつ続いて、その次が a でその後が 0 文字以上の任意の文字としてみましょう。すると、3 文字目が a のレコードだけがうまく抽出できているのが分かります。
 
@@ -1767,7 +1767,7 @@ SELECT * FROM posts WHERE message LIKE '%\_%';
     - \_(_も同様、抽出したい_の前に\を付けてあげること)</details>
 
 
-<details><summary>#19 NULL(ナル)のレコードを抽出しよう</summary>
+**<details><summary>#19 NULL(ナル)のレコードを抽出しよう</summary>**
 
 NULLについて。とりあえず、全てのレコードを抽出して見ます。
 
@@ -1842,7 +1842,7 @@ SELECT * FROM posts WHERE likes IS NOT NULL;
 	  - IS NOT NULL(NULLを含まないものを抽出する(IS NULLを反転させる))</details>
 
 
-<details><summary>#20 抽出結果を並び替えよう</summary>
+**<details><summary>#20 抽出結果を並び替えよう</summary>**
 
 抽出結果を並び替えてみましょう。たとえば、 likes を小さい順で並び替えたかったら、 `SELECT * FROM posts ORDER BY likes` としてあげます。一方、逆に並べたい場合は、`SELECT * FROM posts ORDER BY likes DESC`とDESCというキーワードを付けます。
 
@@ -1977,7 +1977,7 @@ SELECT * FROM posts ORDER BY likes DESC, message LIMIT 2, 3;
     - OFFSET(何件目のレコードから結果を返すかを指定する)</details>
 
 
-<details><summary>#21 数値の関数を見ていこう</summary>
+**<details><summary>#21 数値の関数を見ていこう</summary>**
 
 SQLでは計算をさせることもできます。いくつかの演算子が用意されていて、足し算は + 、引き算は - 、掛け算は * 、割り算は / 、そして余りを求めるには % を使います。
 
@@ -2081,7 +2081,7 @@ FROM
     - ROUND()(四捨五入したい場合)</details>
 
 
-<details><summary>#22 文字列の関数を見ていこう</summary>
+**<details><summary>#22 文字列の関数を見ていこう</summary>**
 
 文字列を加工する関数について、よく使うものを見ていきましょう。文字列の一部を切り出す関数はSUMSTRING()を使います。では、 message と message の 3 文字目以降を切り出した文字列を抽出してみましょう。
 
@@ -2320,7 +2320,7 @@ SELECT message, SUBSTRING(message, -2) FROM posts;
 	  - CHAR_LENGTH( )(日本語を含む場合に使用し、文字数を求める)</details>
 
 
-<details><summary>#23 日時の関数を見ていこう</summary>
+**<details><summary>#23 日時の関数を見ていこう</summary>**
 
 日時周りの関数を使ってみましょう。今回createdカラムを追加して、’ありがとう’は英語に直しました。
 
@@ -2514,7 +2514,7 @@ DATE_FORMAT(DATE_ADD(created, INTERVAL 7 DAY), '%M %D %Y, %W') AS next
 		- DATEDIFF( )(現在の日付からどれくらい前なのかを知る)</details>
 
 
-<details><summary>#24 レコードの更新をしてみよう</summary>
+**<details><summary>#24 レコードの更新をしてみよう</summary>**
 
 これまでデータを加工して抽出する方法について見ていきましたが、たとえば `likes` に 10 を渡して抽出したとしても、元データの値が変わるわけではありません。したがって、この後に `SELECT * FROM posts` としても、ちゃんと元データが表示されるはずです。
 
@@ -2634,7 +2634,7 @@ SELECT * FROM posts;
 		- UPPER(全てを大文字にする関数)</details>
 
 
-<details><summary>#25 レコードの削除をしてみよう</summary>
+**<details><summary>#25 レコードの削除をしてみよう</summary>**
 
 こうすると、全てのレコードを削除するのですが、通常は条件を付けるので　likes が 10 より小さいものを削除してみましょう。
 
@@ -2782,7 +2782,7 @@ SELECT * FROM posts;
 	  - TRUNCATE TABLE(テーブルを削除して、再作成する)</details>
 
 
-<details><summary>#26 作成、更新日時を自動で設定しよう</summary>
+**<details><summary>#26 作成、更新日時を自動で設定しよう</summary>**
 
 レコードの作成日時や更新日時を自動で設定する方法を見ていきましょう。では、そのためのカラムを追加していきます。created 、 updated を DATETIME にしておきましょう。そのうえで、 DEFAULT を使ってレコードが挿入された時点での日時を NOW() で設定してあげます。また、レコードが更新された時にその時点での日時を自動で更新することもできて、その場合は ON UPDATE としてあげて、その時点での日時なので NOW() としてあげましょう。
 
@@ -2887,7 +2887,7 @@ SELECT id, created, updated FROM posts;
   	- DEFAULT NOW() ON UPDATE NOW()(レコードが挿入された時点での日時を設定し、レコードが更新された時にその時点での日時を自動で更新する)</details>
 
 
-<details><summary>#27 テーブルの設計を変更してみよう</summary>
+**<details><summary>#27 テーブルの設計を変更してみよう</summary>**
 
 いったん作ったテーブルの設計をあとから変更したかった場合の処理を見ていきます。例えばここで、author (オーサー)というカラムをあとから追加したかったとしましょう。その場合は、ALTER TABLEという命令を使います。`テーブル名 ADD` としてあげて、追加したいカラム名とそのデータ型を指定してあげます。では、DESCで確かめてみます。
 
