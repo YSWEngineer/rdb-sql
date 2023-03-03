@@ -1,6 +1,6 @@
 # 💻dotinstall MySQL入門 基礎編
 
-<details><summary>#01 MySQLと使ってみよう</summary>
+**<details><summary>#01 MySQLと使ってみよう</summary>**
 
 MySQLは広く使われているデータベース管理システムで、公式サイトは[mysql.com](http://mysql.com)です。また、 MySQL にはそこから派生した MariaDB (マリアディービー)というプロジェクトもあって、このレッスンでも MariaDB を使っていくのですが、大体同じものだと思っておけば OK です。
 
@@ -25,12 +25,12 @@ INSERT tbl_name VALUES ({expr | DEFAULT},...),(...),...
 `expr` のような初めてみる文字列は構文の下に説明が続いていますので意味がわかるかなと思います。初めのうちは最小構成だけ覚えて必要になったら `[]` の部分を調べてみるというのが良いかなと思います。</details>
 
 
-<details><summary>#02 ブラウザ実行環境を使ってみよう</summary>
+**<details><summary>#02 ブラウザ実行環境を使ってみよう</summary>**
 
 命令は基本的に上から実行されていきます。</details>
 
 
-<details><summary>#03 データベース用語を確認しよう</summary>
+**<details><summary>#03 データベース用語を確認しよう</summary>**
 
 MySQLでは表形式でデータベースを管理していきます。
 
@@ -53,7 +53,7 @@ MySQLでは表形式でデータベースを管理していきます。
 - SQL</details>
 
 
-<details><summary>#04 テーブルを作ってみよう</summary>
+**<details><summary>#04 テーブルを作ってみよう</summary>**
 
 ※オンラインターミナルが使用できないため、実際にターミナルからMySQLにログインしてプログラムを入力。
 
@@ -165,7 +165,7 @@ SHOW TABLES; # SHOW TABLES; テーブルの一覧を確認することができ�
     - SHOW TABLES(`SHOW TABLES;` テーブルの一覧を確認することができる)</details>
 
 
-<details><summary>#05 レコードを挿入しよう</summary>
+**<details><summary>#05 レコードを挿入しよう</summary>**
 
 前回のコマンドは、実は再度実行しようとするとエラーになります。
 
@@ -312,7 +312,7 @@ SELECT * FROM posts;  # postsテーブルの中身を表示
     - SELECT：レコードを確認する</details>
 
 
-<details><summary>#06 エラーメッセージを読み解こう</summary>
+**<details><summary>#06 エラーメッセージを読み解こう</summary>**
 
 エラーメッセージの見方について。9行目をセミコロンではなく、カンマにしてしまった場合。MySQLはエラーメッセージが見づらいのですが、見るべきは最後の箇所です。near ‘SELECT * FROM posts’でエラーが出ていると表示されています。このヒントをもとにSELECTの周りを見てあげて、適宜修正するようにしましょう。
 
@@ -417,7 +417,7 @@ command + /
 </details>
 
 
-<details><summary>#07 データ型を見ていこう</summary>
+**<details><summary>#07 データ型を見ていこう</summary>**
 
 My SQLで扱えるデータ型はたくさんあり、よく使うのはこの辺りです。
 
@@ -508,7 +508,7 @@ SQL言語自体は昔からある言語なのでその名残ともいえます�
 140 文字までということは、最大 140 文字の可変長と言うことですので、VARCHAR で違和感はないかと思いますがいかがでしょうか。</details>
 
 
-<details><summary>#08 数値、文字列を扱ってみよう</summary>
+**<details><summary>#08 数値、文字列を扱ってみよう</summary>**
     
 ```sql
 # 数値は、整数を扱っているのでINT
@@ -586,7 +586,7 @@ INSERT INTO posts (message, likes, mood, lang) VALUES
     - CHAR(固定長の文字列の指定)</details>
 
 
-<details><summary>#09 ENUM型を扱ってみよう</summary>
+**<details><summary>#09 ENUM型を扱ってみよう</summary>**
 
 特定の文字列の中からひとつだけを格納できる ENUM (エナム)というデータ型について見ていきましょう。
 
@@ -711,7 +711,7 @@ SELECT * FROM posts;
 こうしたENUM型の扱いにも慣れておきましょう。</details>
 
 
-<details><summary>#10 SET型を扱ってみよう</summary>
+**<details><summary>#10 SET型を扱ってみよう</summary>**
 
 ENUM は'Gadget', 'Game', 'Business’からひとつしか選べませんでしたが、もし複数選べるようにしたいなら、こちらを SET 型にしてあげます。
 
@@ -868,7 +868,7 @@ INSERT INTO posts (message, likes, categories) VALUES
 </details>
 
 
-<details><summary>#11 真偽値、日時を扱ってみよう</summary>
+**<details><summary>#11 真偽値、日時を扱ってみよう</summary>**
 
 まず真偽値ですが、下書きかどうかを is_draft で管理してみましょう。
 
@@ -976,7 +976,7 @@ SELECT * FROM posts;
     - NOW( )(現在の日時を表すキーワード)</details>
 
 
-<details><summary>#12 NULLの扱いを見ていこう</summary>
+**<details><summary>#12 NULLの扱いを見ていこう</summary>**
 
 レコードの挿入ですが、実は全てのカラムに値を設定していなくても OK です。たとえば、 message だけ指定して、レコードを挿入してみましょう。
 
@@ -1075,7 +1075,7 @@ SELECT * FROM posts;
     - DEFAULT(値が設定されていない場合に弾かずにデフォルト値で設定することができる)</details>
 
 
-<details><summary>#13 値に制限をつけてみよう</summary>
+**<details><summary>#13 値に制限をつけてみよう</summary>**
 
 値の範囲に制限をつける方法。たとえば、 likes は 0 以上 100 以下の値だけにしたいという場合は CHECK を使ってこのように書いてあげれば OK です。
 
@@ -1143,7 +1143,7 @@ ERROR 1062 (23000) at line 7: Duplicate entry 'Arigato' for key 'message'
     - UNIQUE(重複する値を弾く)</details>
 
 
-<details><summary>#14 主キーを設定してみよう</summary>
+**<details><summary>#14 主キーを設定してみよう</summary>**
 
 テーブルですが、特定のレコードを処理するために、そのレコードを一意に識別するためのカラムを設定するのが一般的です。たいていの場合、 id という名前で NULL ではない整数の連番にするので、 INT NOT NULL としてあげましょう。また、こうしたレコードを一意に特定するためのカラムですが、 PRIMARY KEY という指定をすることで、 id をこのテーブルのプライマリーキーつまり、主キーにすることができます。主キーにしておくと、 id の値をうっかり入れ忘れたり、値が重複していたときにエラーにしてくれるというメリットがあります。
 
@@ -1271,7 +1271,7 @@ SELECT * FROM posts;
     - AUTO_INCREMENT(値を入力しなければ自動的に連番になる設定。PRIMARY KEYを設定した場合に使用ができる)</details>
 
 
-<details><summary>#15 SELECTでデータを抽出しよう</summary>
+**<details><summary>#15 SELECTでデータを抽出しよう</summary>**
 
 SELECTについて見ていきましょう。SELECT * FROM posts とすると、全てのレコードを抽出しなさいという意味になります。
 
@@ -1449,7 +1449,7 @@ SELECT * FROM posts WHERE message <> 'Danke';
 上記のようになっております。よって、データを抽出することができるのは、`SELECT`のみとなります。</details>
 
 
-<details><summary>#16 条件を組み合わせてみよう</summary>
+**<details><summary>#16 条件を組み合わせてみよう</summary>**
 
 条件を組み合わせるためのANDとORについて見ていきましょう。それぞれ、なおかつ、もしくは、という意味になります。
 
