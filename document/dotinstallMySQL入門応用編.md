@@ -265,7 +265,7 @@ GROPU BYを使って、エリアごとの合計を集計する方法について
 - GROUP BY：レコードをグループ化してくれる。</details>
 
 
-<details><summary>#03 HAVINGで抽出条件を指定しよう</summary>
+**<details><summary>#03 HAVINGで抽出条件を指定しよう</summary>**
 
 今はarea毎のlikesの合計が出ている状態です。
 
