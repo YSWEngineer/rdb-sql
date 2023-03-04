@@ -572,7 +572,7 @@ FROM
 - CASE：IFと違い、いくらでも条件を増やすことができる</details>
 
 
-<details><summary>#05 抽出結果を別のテーブルにしよう</summary>
+**<details><summary>#05 抽出結果を別のテーブルにしよう</summary>**
 
 抽出結果を別テーブルとして切り出す方法を見ていきます。`CREATE TABLE テーブル名`としたあとに AS に続けて抽出条件を指定してあげれば OK です。今回は area が Tokyo のレコードだけを抽出して posts_tokyo というテーブルにしてあげましょう。
 
