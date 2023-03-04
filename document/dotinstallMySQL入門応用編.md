@@ -139,7 +139,7 @@ SELECT MIN(likes) FROM posts; # MINは最小値
 - MIN()：最小値</details>
 
 
-<details><summary>#02 GROUP BYでグループ化しよう</summary>
+**<details><summary>#02 GROUP BYでグループ化しよう</summary>**
 
 どこでこの投稿がされたかを表すareaというカラムを追加してみましょう。データの挿入もしておきます。areaカラムを足して、適当なデータを追加していきましょう。area として、 'Tokyo' と 'Fukuoka' と 'Osaka' を追加したとしましょう。では、 `SELECT * FROM posts` で見てあげます。
 
