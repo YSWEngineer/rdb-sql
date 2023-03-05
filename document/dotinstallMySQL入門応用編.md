@@ -864,7 +864,7 @@ SELECT * FROM posts_tokyo_view;
 - DROP VIEW：作成済みのビューを削除する</details>
 
 
-<details><summary>#07 UNIONで抽出結果をまとめよう</summary>
+**<details><summary>#07 UNIONで抽出結果をまとめよう</summary>**
 
 UNION について見ていきたいのですが、例を出していきます。likesの大きい順に並び替えてみましょう。`ORDER BY likes DESC` でいいですね。
 
@@ -1015,7 +1015,7 @@ UNION を使う場合、この 2 つのクエリのカラム数とデータ型�
 - UNION ALL：クエリとクエリを一つに繋げることができる ※繋げるクエリのカラム数とデータ型が一致している必要がある</details>
 
 
-<details><summary>#08 サブクエリを使ってみよう</summary>
+**<details><summary>#08 サブクエリを使ってみよう</summary>**
 
 先ずは全てのレコードを表示してみましょう。
 
