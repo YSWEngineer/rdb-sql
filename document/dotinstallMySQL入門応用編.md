@@ -1136,7 +1136,7 @@ INSERT INTO posts(message, likes, area) VALUES
 - サブクエリを使うときの注意点：サブクエリを駆使すればかなり複雑なことができますが、その分クエリが長くなったり、速度が遅くなったりするので、データが多いときには注意して使う必要がある</details>
 
 
-<details><summary>#09 相関サブクエリを使ってみよう</summary>
+**<details><summary>#09 相関サブクエリを使ってみよう</summary>**
 
 今実行してあげると、横に平均が表示されている状態です。
 
